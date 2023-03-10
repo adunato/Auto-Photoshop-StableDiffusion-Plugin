@@ -1,11 +1,12 @@
-const { cleanLayers } = require('../psapi')
 const psapi = require('../psapi')
 const io = require('./io')
 const Enum = require('../enum')
-const { ViewerManager } = require('../viewer')
 const { base64ToBase64Url } = require('./general')
 const html_manip = require('./html_manip')
 const layer_util = require('./layer')
+const ui = require('./ui')
+const selection = require('../selection')
+const GenerationSettings = require('./generation_settings')
 const SessionState = {
     Active: 'active',
     Inactive: 'inactive',
@@ -18,7 +19,22 @@ const GarbageCollectionState = {
 }
 
 class GenerationSession {
+    static #instance = null;
+
+    static instance() {
+        if (!GenerationSession.#instance) {
+            GenerationSession.#isInternalConstructing = true;
+            GenerationSession.#instance = new GenerationSession();
+            GenerationSession.#isInternalConstructing = false;
+        }
+        return GenerationSession.#instance;
+    }
+    static #isInternalConstructing = false;
+
     constructor() {
+        if (!GenerationSession.#isInternalConstructing) {
+            throw new TypeError("PrivateConstructor is not constructable");
+        }
         //this should be unique session id and it also should act as the total number of sessions been created in the project
         this.id = 0
         this.state = SessionState['Inactive']
@@ -108,9 +124,6 @@ class GenerationSession {
                 await discard() //this will discard what is not been highlighted
             }
 
-            //delete the old selection area
-            // g_generation_session.selectionInfo = {}
-
             this.isFirstGeneration = true // only before the first generation is requested should this be true
             // const is_visible = await this.outputGroup.visible
             g_viewer_manager.last_selected_viewer_obj = null // TODO: move this in viewerManager endSession()
@@ -119,8 +132,8 @@ class GenerationSession {
             // this.outputGroup.visible = is_visible
 
             if (
-                this.mode === generationMode['Inpaint'] &&
-                g_sd_mode === generationMode['Inpaint']
+                this.mode === Enum.generationMode['Inpaint'] &&
+                GenerationSettings.sd_mode === Enum.generationMode['Inpaint']
             ) {
                 //create "Mask -- Paint White to Mask -- temporary" layer if current session was inpiant and the selected session is inpaint
                 // the current inpaint session ended on inpaint
@@ -128,19 +141,10 @@ class GenerationSession {
                 await layer_util.deleteLayers([g_inpaint_mask_layer])
                 await createTempInpaintMaskLayer()
             }
-            //delete controlNet image, Note: don't delete control net, let the user disable controlNet if doesn't want to use it
-            // this.controlNetImage = null
-            // html_manip.setControlImageSrc('https://source.unsplash.com/random')
         } catch (e) {
             console.warn(e)
         }
     }
-    // initializeInitImage(group, snapshot, solid_background, path) {
-    //     this.initGroup = group
-    //     this.init_solid_background = solid_background
-    //     this.InitSnapshot = snapshot
-    // }
-    deleteInitImageLayers() {}
     async closePreviousOutputGroup() {
         try {
             //close the previous output folder
@@ -164,12 +168,6 @@ class GenerationSession {
             return true
         }
         return false
-    }
-    loadLastSession() {
-        //load the last session from the server
-    }
-    saveCurrentSession() {
-        //all session info will be saved in a json file in the project folder
     }
     async moveToTopOfOutputGroup(layer) {
         const output_group_id = await this.outputGroup.id
@@ -212,12 +210,6 @@ class GenerationSession {
         //get the selection from the canvas as base64 png, make sure to resize to the width and height slider
         const selectionInfo = await psapi.getSelectionInfoExe()
         this.control_net_selection_info = selectionInfo
-        // const base64_image = await io.IO.getSelectionFromCanvasAsBase64Silent(
-        //     selectionInfo,
-        //     true,
-        //     width,
-        //     height
-        // )
 
         const use_silent_mode = html_manip.getUseSilentMode()
         let layer = null
@@ -243,9 +235,94 @@ class GenerationSession {
             base64ToBase64Url(base64_image),
             control_net_index
         )
-        // console.log('base64_img:', base64_image)
-        // await io.IO.base64ToLayer(base64_image)
     }
+    async hasSessionSelectionChanged() {
+        try {
+            const isSelectionActive = await psapi.checkIfSelectionAreaIsActive()
+            if (isSelectionActive) {
+                const current_selection = isSelectionActive // Note: don't use checkIfSelectionAreaIsActive to return the selection object, change this.
+
+                if (
+                    await this.hasSelectionChanged(
+                        current_selection,
+                        this.selectionInfo
+                    )
+                ) {
+                    return true
+                } else {
+                    //selection has not changed
+                    return false
+                }
+            }
+        } catch (e) {
+            console.warn(e)
+            return false
+        }
+    }
+
+    async hasSelectionChanged(new_selection, old_selection) {
+        if (
+            new_selection.left === old_selection.left &&
+            new_selection.bottom === old_selection.bottom &&
+            new_selection.right === old_selection.right &&
+            new_selection.top === old_selection.top
+        ) {
+            return false
+        } else {
+            return true
+        }
+    }
+
+    async selectionEventHandler(event, descriptor){
+        try {
+            console.log(event, descriptor)
+
+            const isSelectionActive = await psapi.checkIfSelectionAreaIsActive()
+            if (isSelectionActive) {
+                const current_selection = isSelectionActive // Note: don't use checkIfSelectionAreaIsActive to return the selection object, change this.
+
+                await selection.calcWidthHeightFromSelection()
+
+
+                if (
+                    await this.hasSelectionChanged(
+                        current_selection,
+                        this.selectionInfo
+                    ) //new selection
+                ) {
+                    const selected_mode = this.getCurrentGenerationModeByValue(GenerationSettings.sd_mode)
+                    ui.UI.instance().generateModeUI(selected_mode)
+                } else {
+                    // it's the same selection and the session is active
+                    //indicate that the session will continue. only if the session we are in the same mode as the session's mode
+                    // startSessionUI// green color
+                    const current_mode = html_manip.getMode()
+                    if (
+                        this.isActive() && // the session is active
+                        this.isSameMode(current_mode) //same mode
+                    ) {
+                        ui.UI.instance().generateMoreUI()
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(e)
+        }
+    }
+
+    getCurrentGenerationModeByValue(value) {
+        for (let key in Enum.generationMode) {
+            if (
+                Enum.generationMode.hasOwnProperty(key) &&
+                Enum.generationMode[key] === value
+            ) {
+                return key
+            }
+        }
+        return undefined
+    }
+
+
 }
 
 module.exports = {

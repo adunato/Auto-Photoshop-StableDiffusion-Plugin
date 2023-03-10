@@ -281,7 +281,7 @@ class IO {
                 format: formats.binary,
             })
 
-            // const selectionInfo = g_generation_session.selectionInfo
+            // const selectionInfo = session.GenerationSession.instance().selectionInfo
             // const selectionInfo = await psapi.getSelectionInfoExe()
             const cropped_base64_url = await IOHelper.cropPng(
                 arrayBuffer,

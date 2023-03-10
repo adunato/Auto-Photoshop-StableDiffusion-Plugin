@@ -4,7 +4,23 @@ const layer_util = require('../utility/layer')
 const psapi = require('../psapi')
 const { executeAsModal } = require('photoshop').core
 class UI {
-    constructor() {}
+    static #instance = null;
+
+    static instance() {
+        if (!UI.#instance) {
+            UI.#isInternalConstructing = true;
+            UI.#instance = new UI();
+            UI.#isInternalConstructing = false;
+        }
+        return UI.#instance;
+    }
+    static #isInternalConstructing = false;
+
+    constructor() {
+        if (!UI.#isInternalConstructing) {
+            throw new TypeError("PrivateConstructor is not constructable");
+        }
+    }
 
     onStartSessionUI() {
         // will toggle the buttons needed when a generation session start
@@ -55,8 +71,8 @@ class UI {
         const generate_btns = Array.from(
             document.getElementsByClassName('btnGenerateClass')
         )
-        const generation_mode = g_generation_session.mode
-        const generation_name = getCurrentGenerationModeByValue(generation_mode)
+        const generation_mode = session.GenerationSession.instance().mode
+        const generation_name = session.GenerationSession.instance().getCurrentGenerationModeByValue(generation_mode)
         generate_btns.forEach((element) => {
             element.textContent = `Generate More ${generation_name}`
         })

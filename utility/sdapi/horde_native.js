@@ -183,7 +183,7 @@ class hordeGenerator {
                 this.plugin_settings['auto_metadata'] =
                     image_info?.auto_metadata
 
-                // g_generation_session.base64OutputImages[path] =
+                // session.GenerationSession.instance().base64OutputImages[path] =
                 //     image_info['base64']
                 // await saveJsonFileInSubFolder(
                 //     this.plugin_settings,
@@ -199,12 +199,12 @@ class hordeGenerator {
                 // // console.log("metadata_json: ", metadata_json)
             }
 
-            // if (g_generation_session.isFirstGeneration) {
+            // if (session.GenerationSession.instance().isFirstGeneration) {
             //     //store them in the generation session for viewer manager to use
-            //     g_generation_session.image_paths_to_layers = last_images_paths
+            //     session.GenerationSession.instance().image_paths_to_layers = last_images_paths
             // } else {
-            //     g_generation_session.image_paths_to_layers = {
-            //         ...g_generation_session.image_paths_to_layers,
+            //     session.GenerationSession.instance().image_paths_to_layers = {
+            //         ...session.GenerationSession.instance().image_paths_to_layers,
             //         ...last_images_paths,
             //     }
             //     // g_number_generation_per_session++
@@ -243,7 +243,7 @@ class hordeGenerator {
                 this.plugin_settings['auto_metadata'] =
                     image_info?.auto_metadata
 
-                g_generation_session.base64OutputImages[path] =
+                session.GenerationSession.instance().base64OutputImages[path] =
                     image_info['base64']
                 await saveJsonFileInSubFolder(
                     this.plugin_settings,
@@ -253,12 +253,12 @@ class hordeGenerator {
                 last_images_paths[path] = image_info['layer']
             }
 
-            if (g_generation_session.isFirstGeneration) {
+            if (session.GenerationSession.instance().isFirstGeneration) {
                 //store them in the generation session for viewer manager to use
-                g_generation_session.image_paths_to_layers = last_images_paths
+                session.GenerationSession.instance().image_paths_to_layers = last_images_paths
             } else {
-                g_generation_session.image_paths_to_layers = {
-                    ...g_generation_session.image_paths_to_layers,
+                session.GenerationSession.instance().image_paths_to_layers = {
+                    ...session.GenerationSession.instance().image_paths_to_layers,
                     ...last_images_paths,
                 }
                 // g_number_generation_per_session++
@@ -298,7 +298,7 @@ class hordeGenerator {
     async interrupt() {
         try {
             html_manip.updateProgressBarsHtml(0)
-            // g_generation_session.request_status = Enum.requestStatus['']
+            // session.GenerationSession.instance().request_status = Enum.requestStatus['']
             this.last_horde_id = this.horde_id
             this.horde_id = null //horde_id could be used startCheckingprogress() so we need to nullify it as soon as possible. TODO: refactor this dependency.
             this.isCanceled = true
@@ -316,7 +316,7 @@ class hordeGenerator {
         //*) save them locally to output directory
         //*) import them into the canvas
         //*) resize and move the layers to fit the selection
-        //*) return the results to be stored and processed by the g_generation_session
+        //*) return the results to be stored and processed by the session.GenerationSession.instance()
         try {
             if (this.isProcessHordeResultCalled) {
                 return
@@ -352,7 +352,7 @@ class hordeGenerator {
                         layer: image_layer,
                     })
                     await psapi.layerToSelection(
-                        g_generation_session.selectionInfo
+                        session.GenerationSession.instance().selectionInfo
                     ) //TODO: create a safe layerToSelection function
                 } catch (e) {
                     console.warn(e)

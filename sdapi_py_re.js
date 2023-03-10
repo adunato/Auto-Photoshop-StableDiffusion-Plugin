@@ -585,7 +585,7 @@ async function requestControlNetTxt2Img(plugin_settings) {
     let control_networks = [];
     let active_control_networks = 0;
     for (let index = 0; index < control_net.getControlNetMaxModelsNumber(); index++) {
-        if(!control_net.getEnableControlNet(index)) {
+        if (!control_net.getEnableControlNet(index)) {
             control_networks[index] = false;
             continue;
         }
@@ -628,8 +628,8 @@ async function requestControlNetTxt2Img(plugin_settings) {
         html_manip.setControlMaskSrc(base64ToBase64Url(base64_mask[mask_index]), index)
         mask_index++;
     }
-    
-    g_generation_session.controlNetMask = base64_mask
+
+    session.GenerationSession.instance().controlNetMask = base64_mask
     const standard_response = await py_re.convertToStandardResponse(
         control_net_settings,
         json['images'].slice(0, numOfImages - active_control_networks),
@@ -665,7 +665,7 @@ async function requestControlNetImg2Img(plugin_settings) {
         if (!control_net_settings['controlnet_units'][index]['model']) {
             app.showAlert('you need to select a valid ControlNet Model')
             throw 'you need to select a valid ControlNet Model'
-        }        
+        }
     }
 
     let request = await fetch(full_url, {
@@ -689,7 +689,7 @@ async function requestControlNetImg2Img(plugin_settings) {
         html_manip.setControlMaskSrc(base64ToBase64Url(base64_mask[index]), index)
     }
 
-    g_generation_session.controlNetMask = base64_mask
+    session.GenerationSession.instance().controlNetMask = base64_mask
 
     const standard_response = await py_re.convertToStandardResponse(
         control_net_settings,

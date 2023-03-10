@@ -175,7 +175,7 @@ function mapPluginSettingsToControlNet(plugin_settings) {
     for (let index = 0; index < g_controlnet_max_supported_models; index++) {
         if (getEnableControlNet(index)) {
             controlnet_units[active_index] = {
-                input_image: g_generation_session.controlNetImage[index],
+                input_image: session.GenerationSession.instance().controlNetImage[index],
                 mask: '',
                 module: getSelectedModule(index),
                 model: getSelectedModel(index),
@@ -251,7 +251,7 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
             const selectionInfo =
                 await selection.Selection.getSelectionInfoExe()
             if (selectionInfo) {
-                await g_generation_session.setControlNetImage(index)
+                await session.GenerationSession.instance().setControlNetImage(index)
             } else {
                 await note.Notification.inactiveSelectionArea()
             }
@@ -263,13 +263,13 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
             // const selectionInfo = await selection.Selection.getSelectionInfoExe()
 
             if (
-                g_generation_session.control_net_selection_info &&
-                g_generation_session.controlNetMask[index]
+                session.GenerationSession.instance().control_net_selection_info &&
+                session.GenerationSession.instance().controlNetMask[index]
             ) {
                 const selection_info =
-                    g_generation_session.control_net_selection_info
+                    session.GenerationSession.instance().control_net_selection_info
                 const layer = await io.IO.base64ToLayer(
-                    g_generation_session.controlNetMask[index],
+                    session.GenerationSession.instance().controlNetMask[index],
                     'ControlNet Mask.png',
                     selection_info.left,
                     selection_info.top,

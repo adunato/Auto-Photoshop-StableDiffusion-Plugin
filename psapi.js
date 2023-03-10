@@ -804,7 +804,7 @@ async function silentSetInitImage(layer, session_id) {
         const height = html_manip.getHeight()
 
         //get the selection from the canvas as base64 png, make sure to resize to the width and height slider
-        const selectionInfo = g_generation_session.selectionInfo
+        const selectionInfo = session.GenerationSession.instance().selectionInfo
         // const base64_image = await io.IO.getSelectionFromCanvasAsBase64Silent(
         //     selectionInfo,
         //     true,
@@ -849,10 +849,10 @@ async function silentSetInitImage(layer, session_id) {
         const path = `${g_init_images_dir}/${image_name}`
 
         //store the base64 init image and also set it as the active/latest init image
-        g_generation_session.base64initImages[path] = base64_image
-        g_generation_session.activeBase64InitImage = base64_image
+        session.GenerationSession.instance().base64initImages[path] = base64_image
+        session.GenerationSession.instance().activeBase64InitImage = base64_image
 
-        const init_src = base64ToSrc(g_generation_session.activeBase64InitImage)
+        const init_src = base64ToSrc(session.GenerationSession.instance().activeBase64InitImage)
         html_manip.setInitImageSrc(init_src)
 
         return (image_info = { name: image_name, base64: base64_image })
@@ -873,7 +873,7 @@ async function silentSetInitImageMask(layer, session_id) {
         const height = html_manip.getHeight()
 
         //get the selection from the canvas as base64 png, make sure to resize to the width and height slider
-        const selectionInfo = g_generation_session.selectionInfo
+        const selectionInfo = session.GenerationSession.instance().selectionInfo
 
         const use_silent_mode = html_manip.getUseSilentMode()
 
@@ -897,10 +897,10 @@ async function silentSetInitImageMask(layer, session_id) {
         console.log(image_name)
 
         const path = `${g_init_images_dir}/${image_name}`
-        g_generation_session.base64maskImage[path] = base64_image
-        g_generation_session.activeBase64MaskImage = base64_image
+        session.GenerationSession.instance().base64maskImage[path] = base64_image
+        session.GenerationSession.instance().activeBase64MaskImage = base64_image
 
-        const mask_src = base64ToSrc(g_generation_session.activeBase64MaskImage)
+        const mask_src = base64ToSrc(session.GenerationSession.instance().activeBase64MaskImage)
         html_manip.setInitImageMaskSrc(mask_src)
         return (image_info = { name: image_name, base64: base64_image })
     } catch (e) {
@@ -940,11 +940,11 @@ async function setInitImage(layer, session_id) {
         ini_image_element.src = image_src
         const path = `${g_init_images_dir}/${image_name}`
 
-        g_generation_session.base64initImages[path] = base64_image
-        g_generation_session.activeBase64InitImage =
-            g_generation_session.base64initImages[path]
+        session.GenerationSession.instance().base64initImages[path] = base64_image
+        session.GenerationSession.instance().activeBase64InitImage =
+            session.GenerationSession.instance().base64initImages[path]
 
-        const init_src = base64ToSrc(g_generation_session.activeBase64InitImage)
+        const init_src = base64ToSrc(session.GenerationSession.instance().activeBase64InitImage)
         html_manip.setInitImageSrc(init_src)
 
         return (image_info = { name: image_name, base64: base64_image })
@@ -983,14 +983,14 @@ async function setInitImageMask(layer, session_id) {
         ini_image_mask_element.dataset.layer_id = layer.id
 
         const path = `${g_init_images_dir}/${image_name}`
-        g_generation_session.base64maskImage[path] = base64_image
-        g_generation_session.activeBase64MaskImage =
-            g_generation_session.base64maskImage[path]
+        session.GenerationSession.instance().base64maskImage[path] = base64_image
+        session.GenerationSession.instance().activeBase64MaskImage =
+            session.GenerationSession.instance().base64maskImage[path]
         //create viewer init image obj
         {
         }
         // return image_name
-        const mask_src = base64ToSrc(g_generation_session.activeBase64MaskImage)
+        const mask_src = base64ToSrc(session.GenerationSession.instance().activeBase64MaskImage)
         html_manip.setInitImageMaskSrc(mask_src)
         return (image_info = { name: image_name, base64: base64_image })
     } catch (e) {

@@ -773,10 +773,10 @@ class ViewerManager {
 
         const image_width = this.isSquareThumbnail
             ? 100
-            : g_generation_session.last_settings.width
+            : session.GenerationSession.instance().last_settings.width
         const image_height = this.isSquareThumbnail
             ? 100
-            : g_generation_session.last_settings.height
+            : session.GenerationSession.instance().last_settings.height
 
         const [new_width, new_height] = general.scaleToClosestKeepRatio(
             image_width,
@@ -833,7 +833,7 @@ class ViewerManager {
             const solid_background =
                 this.initImageLayersJson[path].solid_background
             const auto_delete = this.initImageLayersJson[path].autoDelete
-            const base64_image = g_generation_session.base64initImages[path]
+            const base64_image = session.GenerationSession.instance().base64initImages[path]
             await loadInitImageViewerObject(
                 group,
                 snapshot,

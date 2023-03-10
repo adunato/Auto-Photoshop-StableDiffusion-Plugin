@@ -71,6 +71,34 @@ function convertSelectionObjectToSelectionInfo(selection_obj) {
     return selection_info
 }
 
+//REFACTOR: move to selection.js, add selection mode as attribute (linked to rbSelectionMode event)
+async function calcWidthHeightFromSelection() {
+    //set the width and height, hrWidth, and hrHeight using selection info and selection mode
+    const selection_mode = html_manip.getSelectionMode()
+    if (selection_mode === 'ratio') {
+        //change (width and height) and (hrWidth, hrHeight) to match the ratio of selection
+        const [width, height, hr_width, hr_height] =
+            await selection.selectionToFinalWidthHeight()
+
+        html_manip.autoFillInWidth(width)
+        html_manip.autoFillInHeight(height)
+        html_manip.autoFillInHRWidth(hr_width)
+        html_manip.autoFillInHRHeight(hr_height)
+    } else if (selection_mode === 'precise') {
+        const selectionInfo = await psapi.getSelectionInfoExe()
+        const [width, height, hr_width, hr_height] = [
+            selectionInfo.width,
+            selectionInfo.height,
+            0,
+            0,
+        ]
+        html_manip.autoFillInWidth(width)
+        html_manip.autoFillInHeight(height)
+    }
+}
+
+
+
 const SelectionInfoDesc = () => ({
     _obj: 'get',
     _target: [
@@ -164,4 +192,5 @@ module.exports = {
     selectBoundingBox,
     convertSelectionObjectToSelectionInfo,
     Selection,
+    calcWidthHeightFromSelection,
 }
