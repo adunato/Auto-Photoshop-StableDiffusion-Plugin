@@ -2,6 +2,8 @@
 const settings_tab = require('../tab/settings')
 const { getPromptShortcut } = require('../html_manip')
 const general = require('../general')
+const psapi = require('../../psapi')
+const document_util = require('../document_util')
 // function newOutputImageName(format = 'png') {
 //     const random_id = Math.floor(Math.random() * 100000000000 + 1) // Date.now() doesn't have enough resolution to avoid duplicate
 //     const image_name = `output- ${Date.now()}-${random_id}.${format}`
@@ -431,8 +433,8 @@ async function loadHistory(payload) {
     // const uniqueDocumentId = payload['uniqueDocumentId']
     // const uniqueDocumentId = await getUniqueDocumentId()
 
-    const uuid = await getUniqueDocumentId()
-    const doc_entry = await getDocFolder(uuid)
+    const uuid = await document_util.getUniqueDocumentId()
+    const doc_entry = await document_util.getDocFolder(uuid)
     const output_images_entries = await getOutputImagesEntries(doc_entry)
     history['image_paths'] = []
     history['metadata_jsons'] = []
@@ -446,7 +448,7 @@ async function loadHistory(payload) {
         history['metadata_jsons'].push(metadata_json)
 
         const arrayBuffer = await output_entry.read({ format: formats.binary })
-        const base64_image = _arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
+        const base64_image = psapi._arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
 
         // const base64 =
         history['base64_images'].push(base64_image)

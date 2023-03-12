@@ -2,24 +2,23 @@ const html_manip = require('./html_manip')
 const presets = require('./presets/preset')
 const layer_util = require('../utility/layer')
 const psapi = require('../psapi')
+const GenerationSettings = require('./generation_settings')
 const { executeAsModal } = require('photoshop').core
 class UI {
-    static #instance = null;
+    static #instance = null
 
     static instance() {
         if (!UI.#instance) {
-            UI.#isInternalConstructing = true;
-            UI.#instance = new UI();
-            UI.#isInternalConstructing = false;
+            UI.#instance = new UI()
         }
-        return UI.#instance;
+        return UI.#instance
     }
-    static #isInternalConstructing = false;
 
     constructor() {
-        if (!UI.#isInternalConstructing) {
-            throw new TypeError("PrivateConstructor is not constructable");
+        if (!UI.#instance) {
+            UI.#instance = this
         }
+        return UI.#instance
     }
 
     onStartSessionUI() {
@@ -72,7 +71,10 @@ class UI {
             document.getElementsByClassName('btnGenerateClass')
         )
         const generation_mode = session.GenerationSession.instance().mode
-        const generation_name = session.GenerationSession.instance().getCurrentGenerationModeByValue(generation_mode)
+        const generation_name =
+            session.GenerationSession.instance().getCurrentGenerationModeByValue(
+                generation_mode
+            )
         generate_btns.forEach((element) => {
             element.textContent = `Generate More ${generation_name}`
         })
@@ -108,7 +110,7 @@ class UI {
             (element) => (element.style.display = 'none')
         )
 
-        this.generateModeUI(g_sd_mode)
+        this.generateModeUI(GenerationSettings.sd_mode)
     }
 
     setGenerateBtnText(textContent) {
@@ -302,21 +304,21 @@ async function loadHealBrushSettings(ui_settings) {
     document.getElementById('rbModeInpaint').click()
     const { timer } = require('./general')
     // await timer(1000)
-    // if (layer_util.Layer.doesLayerExist(g_inpaint_mask_layer)) {
+    // if (layer_util.Layer.doesLayerExist(psapi.inpaint_mask_layer)) {
     //     // psapi.executeCommandExe(async () => {
-    //     //     g_inpaint_mask_layer.opacity = 50
+    //     //     inpaint_mask_layer.opacity = 50
     //     // })
     //     // ;(async () => {
     //     //     await executeAsModal(() => {
-    //     //         g_inpaint_mask_layer.opacity = 50
+    //     //         inpaint_mask_layer.opacity = 50
     //     //     })
     //     // })()
     // } else {
-    //     await createTempInpaintMaskLayer()
+    //     await psapi.createTempInpaintMaskLayer()
     // }
 
     // await executeAsModal(() => {
-    //     g_inpaint_mask_layer.opacity = 50
+    //     inpaint_mask_layer.opacity = 50
     // })
     loadPreset(ui_settings, presets.HealBrushSettings)
 }

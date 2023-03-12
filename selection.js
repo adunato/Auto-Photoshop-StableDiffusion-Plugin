@@ -1,5 +1,8 @@
-const psapi = require('./psapi')
 const html_manip = require('./utility/html_manip')
+const { executeAsModal } = require('photoshop').core
+const batchPlay = require('photoshop').action.batchPlay
+const app = window.require('photoshop').app
+
 function finalWidthHeight(
     selectionWidth,
     selectionHeight,
@@ -33,7 +36,7 @@ function finalWidthHeight(
 async function selectionToFinalWidthHeight() {
     // const { getSelectionInfoExe } = require('./psapi')
     try {
-        const selectionInfo = await psapi.getSelectionInfoExe()
+        const selectionInfo = await Selection.getSelectionInfoExe()
         const [finalWidth, finalHeight] = finalWidthHeight(
             selectionInfo.width,
             selectionInfo.height,
@@ -56,9 +59,64 @@ async function selectBoundingBox() {
     let l = await app.activeDocument.activeLayers[0]
     let bounds = await l.boundsNoEffects
     let selectionInfo = convertSelectionObjectToSelectionInfo(bounds)
-    await psapi.reSelectMarqueeExe(selectionInfo)
+    await reSelectMarqueeExe(selectionInfo)
     return selectionInfo
 }
+async function reSelectMarqueeExe(selectionInfo) {
+    try {
+        if (Selection.isSelectionValid(selectionInfo)) {
+            //only try to reactivate the selection area if it is valid
+            await executeAsModal(async () => {
+                await reSelectMarqueeCommand(selectionInfo)
+            })
+        }
+    } catch (e) {
+        console.warn(e)
+    }
+}
+
+async function reSelectMarqueeCommand(selectionInfo) {
+    const result = await batchPlay(
+        [
+            {
+                _obj: 'set',
+                _target: [
+                    {
+                        _ref: 'channel',
+                        _property: 'selection',
+                    },
+                ],
+                to: {
+                    _obj: 'rectangle',
+                    top: {
+                        _unit: 'pixelsUnit',
+                        _value: selectionInfo.top,
+                    },
+                    left: {
+                        _unit: 'pixelsUnit',
+                        _value: selectionInfo.left,
+                    },
+                    bottom: {
+                        _unit: 'pixelsUnit',
+                        _value: selectionInfo.bottom,
+                    },
+                    right: {
+                        _unit: 'pixelsUnit',
+                        _value: selectionInfo.right,
+                    },
+                },
+                _options: {
+                    dialogOptions: 'dontDisplay',
+                },
+            },
+        ],
+        {
+            synchronousExecution: true,
+            modalBehavior: 'execute',
+        }
+    )
+}
+
 function convertSelectionObjectToSelectionInfo(selection_obj) {
     let selection_info = {
         left: selection_obj._left,
@@ -71,21 +129,20 @@ function convertSelectionObjectToSelectionInfo(selection_obj) {
     return selection_info
 }
 
-//REFACTOR: move to selection.js, add selection mode as attribute (linked to rbSelectionMode event)
 async function calcWidthHeightFromSelection() {
     //set the width and height, hrWidth, and hrHeight using selection info and selection mode
     const selection_mode = html_manip.getSelectionMode()
     if (selection_mode === 'ratio') {
         //change (width and height) and (hrWidth, hrHeight) to match the ratio of selection
         const [width, height, hr_width, hr_height] =
-            await selection.selectionToFinalWidthHeight()
+            await selectionToFinalWidthHeight()
 
         html_manip.autoFillInWidth(width)
         html_manip.autoFillInHeight(height)
         html_manip.autoFillInHRWidth(hr_width)
         html_manip.autoFillInHRHeight(hr_height)
     } else if (selection_mode === 'precise') {
-        const selectionInfo = await psapi.getSelectionInfoExe()
+        const selectionInfo = await Selection.getSelectionInfoExe()
         const [width, height, hr_width, hr_height] = [
             selectionInfo.width,
             selectionInfo.height,
@@ -96,8 +153,6 @@ async function calcWidthHeightFromSelection() {
         html_manip.autoFillInHeight(height)
     }
 }
-
-
 
 const SelectionInfoDesc = () => ({
     _obj: 'get',
@@ -116,18 +171,12 @@ const SelectionInfoDesc = () => ({
 })
 class Selection {
     static async getSelectionInfoExe() {
-        //return a selectionInfo object or undefined
         try {
-            const selection = await executeAsModal(async () => {
-                const result = await batchPlay([SelectionInfoDesc()], {
-                    synchronousExecution: true,
-                    modalBehavior: 'execute',
-                })
+            const selection = (
+                await executeAsModal(Selection.getSelectionInfoCommand)
+            )[0].selection
 
-                return result[0]?.selection
-            })
-
-            if (this.isSelectionValid(selection)) {
+            if (Selection.isSelectionValid(selection)) {
                 let selection_info = {
                     left: selection.left._value,
                     right: selection.right._value,
@@ -143,11 +192,35 @@ class Selection {
             console.warn('selection info error', e)
         }
     }
+    static async getSelectionInfoCommand() {
+        const result = await batchPlay(
+            [
+                {
+                    _obj: 'get',
+                    _target: [
+                        {
+                            _property: 'selection',
+                        },
+                        {
+                            _ref: 'document',
+                            _id: app.activeDocument._id,
+                        },
+                    ],
+                    _options: {
+                        dialogOptions: 'dontDisplay',
+                    },
+                },
+            ],
+            {
+                synchronousExecution: true,
+                modalBehavior: 'execute',
+            }
+        )
+
+        return result
+    }
 
     static isSelectionValid(selection) {
-        console.warn(
-            'isSelectionValid is deprecated use selection.isSelectionValid instead'
-        )
         if (
             selection && // check if the selection is defined
             selection.hasOwnProperty('left') &&
@@ -160,10 +233,11 @@ class Selection {
 
         return false
     }
+
     static reselectArea(selection_info) {}
     static isSameSelection(selection_info_1, selection_info_2) {}
     static async getImageToSelectionDifference() {
-        const selectionInfo = await psapi.getSelectionInfoExe()
+        const selectionInfo = await Selection.getSelectionInfoExe()
 
         const width = html_manip.getWidth()
         const height = html_manip.getHeight()
@@ -193,4 +267,5 @@ module.exports = {
     convertSelectionObjectToSelectionInfo,
     Selection,
     calcWidthHeightFromSelection,
+    reSelectMarqueeExe,
 }

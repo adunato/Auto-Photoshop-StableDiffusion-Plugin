@@ -2,6 +2,7 @@ const api = require('../api')
 const html_manip = require('../html_manip')
 const selection = require('../../selection')
 const note = require('../notification')
+const session = require('../session')
 const g_controlnet_max_supported_models = 3
 
 async function checkIfControlNetInstalled() {}
@@ -120,7 +121,6 @@ function getControlNetWeightGuidanceStrengthEnd(controlnet_index = 0) {
     return sd_value
 }
 
-
 function getControlNetWeight(controlnet_index = 0) {
     const slider_value = document.getElementById(
         'slControlNetWeight_' + controlnet_index
@@ -170,12 +170,12 @@ function mapPluginSettingsToControlNet(plugin_settings) {
     const ps = plugin_settings // for shortness
     let controlnet_units = []
 
-    debugger
-    let active_index = 0;
+    let active_index = 0
     for (let index = 0; index < g_controlnet_max_supported_models; index++) {
         if (getEnableControlNet(index)) {
             controlnet_units[active_index] = {
-                input_image: session.GenerationSession.instance().controlNetImage[index],
+                input_image:
+                    session.GenerationSession.instance().controlNetImage[index],
                 mask: '',
                 module: getSelectedModule(index),
                 model: getSelectedModel(index),
@@ -190,7 +190,7 @@ function mapPluginSettingsToControlNet(plugin_settings) {
                 guidance_end: getControlNetWeightGuidanceStrengthEnd(index),
                 guessmode: false,
             }
-            active_index++;
+            active_index++
         }
     }
 
@@ -220,7 +220,6 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
     document
         .getElementById('slControlNetGuidanceStrengthStart_' + index)
         .addEventListener('input', (evt) => {
-            // debugger
             const sd_value = general.mapRange(evt.target.value, 0, 100, 0, 1) // convert slider value to SD ready value
             document.getElementById(
                 'lControlNetGuidanceStrengthStart_' + index
@@ -230,7 +229,6 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
     document
         .getElementById('slControlNetGuidanceStrengthEnd_' + index)
         .addEventListener('input', (evt) => {
-            // debugger
             const sd_value = general.mapRange(evt.target.value, 0, 100, 0, 1) // convert slider value to SD ready value
             document.getElementById(
                 'lControlNetGuidanceStrengthStart_' + index
@@ -240,7 +238,6 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
     document
         .getElementById('slControlNetWeight_' + index)
         .addEventListener('input', (evt) => {
-            // debugger
             const sd_value = general.mapRange(evt.target.value, 0, 100, 0, 2) // convert slider value to SD ready value
             document.getElementById('lControlNetWeight_' + index).textContent =
                 Number(sd_value).toFixed(2)
@@ -251,7 +248,9 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
             const selectionInfo =
                 await selection.Selection.getSelectionInfoExe()
             if (selectionInfo) {
-                await session.GenerationSession.instance().setControlNetImage(index)
+                await session.GenerationSession.instance().setControlNetImage(
+                    index
+                )
             } else {
                 await note.Notification.inactiveSelectionArea()
             }
@@ -263,11 +262,13 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
             // const selectionInfo = await selection.Selection.getSelectionInfoExe()
 
             if (
-                session.GenerationSession.instance().control_net_selection_info &&
+                session.GenerationSession.instance()
+                    .control_net_selection_info &&
                 session.GenerationSession.instance().controlNetMask[index]
             ) {
                 const selection_info =
-                    session.GenerationSession.instance().control_net_selection_info
+                    session.GenerationSession.instance()
+                        .control_net_selection_info
                 const layer = await io.IO.base64ToLayer(
                     session.GenerationSession.instance().controlNetMask[index],
                     'ControlNet Mask.png',

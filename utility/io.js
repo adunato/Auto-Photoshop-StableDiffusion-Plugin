@@ -1,13 +1,15 @@
 const batchPlay = require('photoshop').action.batchPlay
 const psapi = require('../psapi')
-// const sdapi = require('../sdapi_py_re')
 const layer_util = require('../utility/layer')
 const general = require('./general')
 const Jimp = require('../jimp/browser/lib/jimp.min')
+const selection = require('../selection')
+const document_util = require('./document_util')
 
 const formats = require('uxp').storage.formats
 const storage = require('uxp').storage
 const fs = storage.localFileSystem
+const { executeAsModal } = require('photoshop').core
 async function snapShotLayer() {
     //snapshot layer with no mask
     let command = [
@@ -84,7 +86,8 @@ async function snapShotLayerExe() {
     await executeAsModal(async () => {
         //create a fill layer above the background layer, so that it's present in the snapshot
         try {
-            const selectionInfo = await psapi.getSelectionInfoExe()
+            const selectionInfo =
+                await selection.Selection.getSelectionInfoExe()
 
             // const backgroundLayer = await app.activeDocument.backgroundLayer
 
@@ -122,7 +125,7 @@ class IO {
     static async exportWebp(layer, export_width, export_height) {
         await executeAsModal(async () => {
             //we assume we have a valid layer rectangular image/layer, no transparency
-            const doc_entry = await getCurrentDocFolder() //get the main document folder before we switch doc
+            const doc_entry = await document_util.getCurrentDocFolder() //get the main document folder before we switch doc
             const layer_info = await layer_util.Layer.getLayerInfo(layer)
             //*) create a new document
             const new_doc = await IOHelper.createDocumentExe(
@@ -155,7 +158,7 @@ class IO {
         folder,
         image_name = 'temp_base64Png.png'
     ) {
-        const arrayBuffer = _base64ToArrayBuffer(base64_png)
+        const arrayBuffer = psapi._base64ToArrayBuffer(base64_png)
 
         // const folder = await storage.localFileSystem.getTemporaryFolder()
 
@@ -173,7 +176,8 @@ class IO {
         try {
             await executeAsModal(async () => {
                 try {
-                    const main_doc_entry = await getCurrentDocFolder()
+                    const main_doc_entry =
+                        await document_util.getCurrentDocFolder()
                     //save the base64_png to .png file
                     const temp_folder = await fs.getTemporaryFolder()
                     const png_file = await this.base64PngToPngFile(
@@ -195,7 +199,7 @@ class IO {
 
                     //convert the arraybuffer to base64Webp string
 
-                    base64_webp = _arrayBufferToBase64(ArrayBufferWebp)
+                    base64_webp = psapi._arrayBufferToBase64(ArrayBufferWebp)
                 } catch (e) {
                     console.warn(e)
                 }
@@ -215,7 +219,7 @@ class IO {
                 })
                 console.log('webp arrayBuffer:', arrayBuffer)
 
-                const base64_image = _arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
+                const base64_image = psapi._arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
                 console.log('base64_image:', base64_image)
                 webp_base64 = base64_image
             })
@@ -312,18 +316,37 @@ class IO {
                 height
             )
 
-            const base64_image = _arrayBufferToBase64(image_buffer) //convert the buffer to base64
+            const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
             //send the base64 to the server to save the file in the desired directory
             // await sdapi.requestSavePng(base64_image, image_name)
             // await saveFileInSubFolder(base64_image, document_name, image_name)
-            // debugger
-            const { requestSavePng } = require('../sdapi_py_re')
-            await requestSavePng(base64_image, image_name)
+            // const { requestSavePng } = require('../sdapi_py_re')
+            await this.requestSavePng(base64_image, image_name)
             return base64_image
         } catch (e) {
             console.warn(e)
         }
     }
+
+    static async requestSavePng(base64_image, image_name) {
+        try {
+            console.log('requestSavePng():')
+
+            const uniqueDocumentId = await document_util.getUniqueDocumentId()
+            const folder = `${uniqueDocumentId}/init_images`
+            const init_entry = await document_util.getInitImagesDir()
+            await document_util.saveFileInSubFolder(
+                base64_image,
+                folder,
+                image_name
+            )
+            console.warn('this function is deprecated')
+        } catch (e) {
+            console.warn(e)
+            return {}
+        }
+    }
+
     static async getSelectionFromCanvasAsBase64Interface(
         width,
         height,
@@ -479,7 +502,7 @@ class IOBase64ToLayer {
         //unselect all layers so that the imported layer get place at the top of the document
         await psapi.unselectActiveLayersExe()
 
-        const imported_layer = await base64ToFile(base64_png, image_name) //silent import into the document
+        const imported_layer = await psapi.base64ToFile(base64_png, image_name) //silent import into the document
 
         return imported_layer
     }
@@ -533,7 +556,7 @@ class IOFolder {
 
     static async getDocumentFolderNativePath() {
         try {
-            const uuid = await getUniqueDocumentId()
+            const uuid = await document_util.getUniqueDocumentId()
 
             let doc_folder = await this.getDocFolder(uuid)
             const path = general.fixNativePath(doc_folder.nativePath)
@@ -546,7 +569,7 @@ class IOFolder {
 
     static async getDocFolder(doc_uuid) {
         //will create folder if does not exist. always return a folder entry
-        const doc_entry = await getDocFolder(doc_uuid)
+        const doc_entry = await document_util.getDocFolder(doc_uuid)
         return doc_entry
     }
     static async getSettingsFolder() {
@@ -608,7 +631,6 @@ class IOJson {
 
     static async saveSettingsToFile(settings_json, settings_file_name) {
         await executeAsModal(async () => {
-            // debugger
             const folder_entry = await IOFolder.getSettingsFolder('Settings')
             await this.saveJsonToFile(
                 settings_json,

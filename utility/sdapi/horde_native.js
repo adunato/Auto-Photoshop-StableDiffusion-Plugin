@@ -4,6 +4,8 @@ const html_manip = require('../html_manip')
 const layer_util = require('../layer')
 const dummy = require('../dummy')
 const io = require('../io')
+const session = require('../session')
+const document_util = require('../document_util')
 class HordeSettings {
     static {}
     static async saveSettings() {
@@ -132,10 +134,14 @@ class hordeGenerator {
             height
         )
 
-        const base64_image = _arrayBufferToBase64(image_buffer) //convert the buffer to base64
+        const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
         //send the base64 to the server to save the file in the desired directory
         // await sdapi.requestSavePng(base64_image, image_name)
-        await saveFileInSubFolder(base64_image, document_name, image_name)
+        await document_util.saveFileInSubFolder(
+            base64_image,
+            document_name,
+            image_name
+        )
         return base64_image
     }
 
@@ -149,10 +155,14 @@ class hordeGenerator {
             height
         )
 
-        const base64_image = _arrayBufferToBase64(image_buffer) //convert the buffer to base64
+        const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
         //send the base64 to the server to save the file in the desired directory
         // await sdapi.requestSavePng(base64_image, image_name)
-        await saveFileInSubFolder(base64_image, document_name, image_name)
+        await document_util.saveFileInSubFolder(
+            base64_image,
+            document_name,
+            image_name
+        )
         return base64_image
     }
 
@@ -176,7 +186,7 @@ class hordeGenerator {
                 )
 
                 // delete the layer made by the webp image.
-                await layer_util.deleteLayers([layer])
+                await layer_util.cleanLayers([layer])
                 // await layer.delete()
 
                 // const json_file_name = `${image_name.split('.')[0]}.json`
@@ -245,7 +255,7 @@ class hordeGenerator {
 
                 session.GenerationSession.instance().base64OutputImages[path] =
                     image_info['base64']
-                await saveJsonFileInSubFolder(
+                await document_util.saveJsonFileInSubFolder(
                     this.plugin_settings,
                     document_name,
                     json_file_name
@@ -255,10 +265,12 @@ class hordeGenerator {
 
             if (session.GenerationSession.instance().isFirstGeneration) {
                 //store them in the generation session for viewer manager to use
-                session.GenerationSession.instance().image_paths_to_layers = last_images_paths
+                session.GenerationSession.instance().image_paths_to_layers =
+                    last_images_paths
             } else {
                 session.GenerationSession.instance().image_paths_to_layers = {
-                    ...session.GenerationSession.instance().image_paths_to_layers,
+                    ...session.GenerationSession.instance()
+                        .image_paths_to_layers,
                     ...last_images_paths,
                 }
                 // g_number_generation_per_session++
@@ -329,7 +341,7 @@ class hordeGenerator {
             g_horde_generation_result = await requestHordeStatus(temp_id)
 
             const generations = g_horde_generation_result.generations
-            const writeable_entry = await getCurrentDocFolder()
+            const writeable_entry = await document_util.getCurrentDocFolder()
             const images_info = [] //{path:image_path,base64:}
             for (const image_horde_container of generations) {
                 try {
@@ -344,7 +356,7 @@ class hordeGenerator {
                     const image_png_file_name =
                         general.convertImageNameToPng(image_file_name)
 
-                    const uuid = await getUniqueDocumentId()
+                    const uuid = await document_util.getUniqueDocumentId()
                     const image_path = `${uuid}/${image_png_file_name}` //this is the png path
                     images_info.push({
                         path: image_path,

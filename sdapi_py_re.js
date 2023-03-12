@@ -4,6 +4,7 @@ const { getExtensionType } = require('./utility/html_manip')
 const py_re = require('./utility/sdapi/python_replacement')
 const Enum = require('./enum')
 const control_net = require('./utility/tab/control_net')
+const document_util = require('./utility/document_util')
 //javascript plugin can't read images from local directory so we send a request to local server to read the image file and send it back to plugin as image string base64
 async function getInitImage(init_image_name) {
     console.log('getInitImage(): get Init Image from the server :')
@@ -40,21 +41,6 @@ async function getInitImage(init_image_name) {
     // let img_blob =  await (await fetch(img.src)).blob()
     // console.log("img_blob:")
     // console.dir(img_blob)
-}
-//REFACTOR: move this function to io.js
-async function requestSavePng(base64_image, image_name) {
-    try {
-        console.log('requestSavePng():')
-
-        const uniqueDocumentId = await getUniqueDocumentId()
-        const folder = `${uniqueDocumentId}/init_images`
-        const init_entry = await getInitImagesDir()
-        saveFileInSubFolder(base64_image, folder, image_name)
-        console.warn('this function is deprecated')
-    } catch (e) {
-        console.warn(e)
-        return {}
-    }
 }
 async function requestTxt2Img(payload) {
     try {
@@ -582,28 +568,44 @@ async function requestControlNetTxt2Img(plugin_settings) {
     const full_url = `${g_sd_url}/controlnet/txt2img`
     const control_net_settings =
         control_net.mapPluginSettingsToControlNet(plugin_settings)
-    let control_networks = [];
-    let active_control_networks = 0;
-    for (let index = 0; index < control_net.getControlNetMaxModelsNumber(); index++) {
+    let control_networks = []
+    let active_control_networks = 0
+    for (
+        let index = 0;
+        index < control_net.getControlNetMaxModelsNumber();
+        index++
+    ) {
         if (!control_net.getEnableControlNet(index)) {
-            control_networks[index] = false;
-            continue;
+            control_networks[index] = false
+            continue
         }
-        control_networks[index] = true;
-        if (!control_net_settings['controlnet_units'][active_control_networks]['input_image'][0]) {
+        control_networks[index] = true
+        if (
+            !control_net_settings['controlnet_units'][active_control_networks][
+                'input_image'
+            ][0]
+        ) {
             app.showAlert('you need to add a valid ControlNet input image')
             throw 'you need to add a valid ControlNet input image'
         }
 
-        if (!control_net_settings['controlnet_units'][active_control_networks]['module']) {
+        if (
+            !control_net_settings['controlnet_units'][active_control_networks][
+                'module'
+            ]
+        ) {
             app.showAlert('you need to select a valid ControlNet Module')
             throw 'you need to select a valid ControlNet Module'
         }
-        if (!control_net_settings['controlnet_units'][active_control_networks]['model']) {
+        if (
+            !control_net_settings['controlnet_units'][active_control_networks][
+                'model'
+            ]
+        ) {
             app.showAlert('you need to select a valid ControlNet Model')
             throw 'you need to select a valid ControlNet Model'
         }
-        active_control_networks++;
+        active_control_networks++
     }
 
     let request = await fetch(full_url, {
@@ -620,13 +622,18 @@ async function requestControlNetTxt2Img(plugin_settings) {
 
     //update the mask in controlNet tab
     const numOfImages = json['images'].length
-    const base64_mask = json['images'].slice(numOfImages - active_control_networks)
+    const base64_mask = json['images'].slice(
+        numOfImages - active_control_networks
+    )
 
-    let mask_index = 0;
+    let mask_index = 0
     for (let index = 0; index < control_networks.length; index++) {
-        if(control_networks[index] == false) continue;
-        html_manip.setControlMaskSrc(base64ToBase64Url(base64_mask[mask_index]), index)
-        mask_index++;
+        if (control_networks[index] == false) continue
+        html_manip.setControlMaskSrc(
+            base64ToBase64Url(base64_mask[mask_index]),
+            index
+        )
+        mask_index++
     }
 
     session.GenerationSession.instance().controlNetMask = base64_mask
@@ -648,12 +655,17 @@ async function requestControlNetImg2Img(plugin_settings) {
     const control_net_settings =
         control_net.mapPluginSettingsToControlNet(plugin_settings)
 
-    let control_networks = 0;
-    for (let index = 0; index < control_net.getControlNetMaxModelsNumber(); index++) {
-        if(!control_net.getEnableControlNet(index))
-            break
+    let control_networks = 0
+    for (
+        let index = 0;
+        index < control_net.getControlNetMaxModelsNumber();
+        index++
+    ) {
+        if (!control_net.getEnableControlNet(index)) break
         control_networks++
-        if (!control_net_settings['controlnet_units'][index]['input_image'][0]) {
+        if (
+            !control_net_settings['controlnet_units'][index]['input_image'][0]
+        ) {
             app.showAlert('you need to add a valid ControlNet input image')
             throw 'you need to add a valid ControlNet input image'
         }
@@ -686,7 +698,10 @@ async function requestControlNetImg2Img(plugin_settings) {
     const base64_mask = json['images'].slice(numOfImages - control_networks)
 
     for (let index = 0; index < control_networks; index++) {
-        html_manip.setControlMaskSrc(base64ToBase64Url(base64_mask[index]), index)
+        html_manip.setControlMaskSrc(
+            base64ToBase64Url(base64_mask[index]),
+            index
+        )
     }
 
     session.GenerationSession.instance().controlNetMask = base64_mask
@@ -739,7 +754,6 @@ module.exports = {
     requestGetConfig,
     requestGetOptions,
     imageSearch,
-    requestSavePng,
     // requestHorde,
     // requestHordeCheck,
     // requestHordeStatus,
