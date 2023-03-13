@@ -4,10 +4,12 @@ const Enum = require('../enum')
 const { base64ToBase64Url } = require('./general')
 const html_manip = require('./html_manip')
 const layer_util = require('./layer')
-const ui = require('./ui')
+// const ui = require('./ui')
 const selection = require('../selection')
 const GenerationSettings = require('./generation_settings')
 const document_util = require('./document_util')
+const file_util = require('../utility/file_util')
+const app_events = require('../utility/app_events')
 const { executeAsModal } = require('photoshop').core
 const app = require('photoshop').app
 const SessionState = {
@@ -20,30 +22,6 @@ const GarbageCollectionState = {
     DiscardSelected: 'discard_selected',
     AcceptSelected: 'accept_selected', //accept_selected only chosen images
 }
-
-function createEvent(eventName) {
-    return {
-        handlers: [],
-        subscribe(fn) {
-            this.handlers.push(fn)
-        },
-        unsubscribe(fn) {
-            this.handlers = this.handlers.filter((handler) => handler !== fn)
-        },
-        raise(data) {
-            this.handlers.forEach((handler) => handler(data))
-        },
-        get name() {
-            return eventName
-        },
-    }
-}
-
-const endSessionEvent = createEvent('endSession')
-const acceptAllEvent = createEvent('acceptAll')
-const discardAllEvent = createEvent('discardAll')
-const discardSelectedEvent = createEvent('discardAll')
-const discardEvent = createEvent('discardAll')
 
 class GenerationSession {
     static #instance = null
@@ -133,32 +111,32 @@ class GenerationSession {
             this.deactivate()
 
             if (garbage_collection_state === GarbageCollectionState['Accept']) {
-                acceptAllEvent.raise()
+                await app_events.acceptAllEvent.raise()
                 // await viewer.ViewerManager.instance().acceptAll()
             } else if (
                 garbage_collection_state === GarbageCollectionState['Discard']
             ) {
-                discardAllEvent.raise()
+                await app_events.discardAllEvent.raise()
                 // await viewer.ViewerManager.instance().discardAll()
             } else if (
                 garbage_collection_state ===
                 GarbageCollectionState['DiscardSelected']
             ) {
                 //this should be discardAllExcept(selectedLayers)
-                discardSelectedEvent.raise()
+                await app_events.discardSelectedEvent.raise()
                 // await viewer.ViewerManager.instance().discardSelected() //this will discard what is not been highlighted
             } else if (
                 garbage_collection_state ===
                 GarbageCollectionState['AcceptSelected']
             ) {
-                discardEvent.raise()
+                await app_events.discardEvent.raise()
                 //this should be discardAllExcept(selectedLayers)
                 // await viewer.ViewerManager.instance().discard() //this will discard what is not been highlighted
             }
 
             this.isFirstGeneration = true // only before the first generation is requested should this be true
             // const is_visible = await this.outputGroup.visible
-            endSessionEvent.raise()
+            await app_events.endSessionEvent.raise()
             await psapi.collapseFolderExe([this.outputGroup], false) // close the folder group
             // this.outputGroup.visible = is_visible
 
@@ -319,7 +297,10 @@ class GenerationSession {
                         GenerationSession.instance().getCurrentGenerationModeByValue(
                             GenerationSettings.sd_mode
                         )
-                    ui.UI.instance().generateModeUI(selected_mode)
+                    await app_events.selectionModeChangedEvent.raise(
+                        selected_mode
+                    )
+                    // ui.UI.instance().generateModeUI(selected_mode)
                 } else {
                     // it's the same selection and the session is active
                     //indicate that the session will continue. only if the session we are in the same mode as the session's mode
@@ -329,7 +310,8 @@ class GenerationSession {
                         GenerationSession.instance().isActive() && // the session is active
                         GenerationSession.instance().isSameMode(current_mode) //same mode
                     ) {
-                        ui.UI.instance().generateMoreUI()
+                        await app_events.generateMoreEvent.raise()
+                        // ui.UI.instance().generateMoreUI()
                     }
                 }
             }
@@ -396,7 +378,7 @@ class GenerationSession {
             GenerationSession.instance().base64initImages[path] = base64_image
             GenerationSession.instance().activeBase64InitImage = base64_image
 
-            const init_src = psapi.base64ToSrc(
+            const init_src = file_util.base64ToSrc(
                 GenerationSession.instance().activeBase64InitImage
             )
             html_manip.setInitImageSrc(init_src)
@@ -449,7 +431,7 @@ class GenerationSession {
             this.base64maskImage[path] = base64_image
             this.activeBase64MaskImage = base64_image
 
-            const mask_src = psapi.base64ToSrc(this.activeBase64MaskImage)
+            const mask_src = file_util.base64ToSrc(this.activeBase64MaskImage)
             html_manip.setInitImageMaskSrc(mask_src)
             return { name: image_name, base64: base64_image }
         } catch (e) {
@@ -479,23 +461,23 @@ class GenerationSession {
             this.init_image_mask_name = image_name // this is the name we will send to the server
 
             console.log(image_name)
-            let base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
+            let base64_image = file_util._arrayBufferToBase64(image_buffer) //convert the buffer to base64
             //send the base64 to the server to save the file in the desired directory
             await io.IO.requestSavePng(base64_image, image_name)
 
-            const image_src = await sdapi.getInitImage(
-                this.init_image_mask_name
-            ) // we should replace this with getInitImagePath which return path to local disk
-            const ini_image_mask_element =
-                document.getElementById('init_image_mask')
-            ini_image_mask_element.src = image_src
-            ini_image_mask_element.dataset.layer_id = layer.id
+            // const image_src = await sdapi.getInitImage(
+            //     this.init_image_mask_name
+            // ) // we should replace this with getInitImagePath which return path to local disk
+            // const ini_image_mask_element =
+            //     document.getElementById('init_image_mask')
+            // ini_image_mask_element.src = image_src
+            // ini_image_mask_element.dataset.layer_id = layer.id
 
             const path = `${this.init_images_dir}/${image_name}`
             this.base64maskImage[path] = base64_image
             this.activeBase64MaskImage = this.base64maskImage[path]
             // return image_name
-            const mask_src = psapi.base64ToSrc(this.activeBase64MaskImage)
+            const mask_src = file_util.base64ToSrc(this.activeBase64MaskImage)
             html_manip.setInitImageMaskSrc(mask_src)
             return { name: image_name, base64: base64_image }
         } catch (e) {
@@ -557,15 +539,26 @@ class GenerationSession {
         }
         this.isLoadingActive = false
     }
+    async activateSessionSelectionArea() {
+        try {
+            if (
+                selection.Selection.isSelectionValid(
+                    GenerationSession.instance().selectionInfo
+                )
+            ) {
+                await selection.reSelectMarqueeExe(
+                    GenerationSession.instance().selectionInfo
+                )
+                await GenerationSession.instance().selectionEventHandler()
+            }
+        } catch (e) {
+            console.warn(e)
+        }
+    }
 }
 
 module.exports = {
     GenerationSession,
     GarbageCollectionState,
     SessionState,
-    endSessionEvent,
-    acceptAllEvent,
-    discardAllEvent,
-    discardSelectedEvent,
-    discardEvent,
 }

@@ -9,12 +9,6 @@ function finalWidthHeight(
     minWidth,
     minHeight
 ) {
-    // const minWidth = 512
-    // const minHeight = 512
-
-    // const selectionWidth = 256
-    // const selectionHeight = 1000
-
     let finalWidth = 0
     let finalHeight = 0
 
@@ -34,7 +28,6 @@ function finalWidthHeight(
 }
 
 async function selectionToFinalWidthHeight() {
-    // const { getSelectionInfoExe } = require('./psapi')
     try {
         const selectionInfo = await Selection.getSelectionInfoExe()
         const [finalWidth, finalHeight] = finalWidthHeight(
@@ -258,6 +251,7 @@ class Selection {
         // console.log('percentage_str: ', percentage_str)
         return ratio
     }
+
     static {}
 }
 module.exports = {

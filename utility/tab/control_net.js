@@ -4,12 +4,15 @@ const selection = require('../../selection')
 const note = require('../notification')
 const session = require('../session')
 const general = require('../general')
+const Enum = require('../../enum')
+const settings = require('./settings')
 const g_controlnet_max_supported_models = 3
+const app = window.require('photoshop').app
 
 async function checkIfControlNetInstalled() {}
 async function requestControlNetModelList() {
     const control_net_json = await api.requestGet(
-        `${g_sd_url}/controlnet/model_list`
+        `${settings.sd_url}/controlnet/model_list`
     )
 
     const model_list = control_net_json?.model_list
@@ -25,7 +28,7 @@ async function requestControlNetModelList() {
 
 async function requestControlNetModuleList() {
     // const control_net_json = await api.requestGet(
-    //     `${g_sd_url}/controlnet/model_list`
+    //     `${sd_url}/controlnet/model_list`
     // )
     // const module_list = [
     //     // 'none',
@@ -54,7 +57,7 @@ async function populateModelMenu() {
             index < g_controlnet_max_supported_models;
             index++
         ) {
-            html_manip.populateMenu(
+            await html_manip.populateMenu(
                 'mModelsMenuControlNet_' + index,
                 'mModelsMenuItemControlNet_' + index,
                 models,
@@ -76,7 +79,7 @@ async function populatePreprocessorMenu() {
             index < g_controlnet_max_supported_models;
             index++
         ) {
-            html_manip.populateMenu(
+            await html_manip.populateMenu(
                 'mModuleMenuControlNet_' + index,
                 'mModuleMenuItemControlNet_' + index,
                 modules,

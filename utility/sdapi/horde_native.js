@@ -6,10 +6,13 @@ const dummy = require('../dummy')
 const io = require('../io')
 const session = require('../session')
 const document_util = require('../document_util')
+const file_util = require('../file_util')
+const app = window.require('photoshop').app
 class HordeSettings {
     static {}
     static async saveSettings() {
         try {
+            //FIXME: unresolved function
             const settings = await getSettings()
 
             let native_horde_settings = await mapPluginSettingsToHorde(settings)
@@ -62,6 +65,7 @@ class hordeGenerator {
         const workers = await getWorkers()
 
         const workers_ids = getWorkerID(workers)
+        //FIXME: unresolved function
         const settings = await getSettings()
         this.plugin_settings = settings
         let payload = await mapPluginSettingsToHorde(settings)
@@ -134,7 +138,7 @@ class hordeGenerator {
             height
         )
 
-        const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
+        const base64_image = file_util._arrayBufferToBase64(image_buffer) //convert the buffer to base64
         //send the base64 to the server to save the file in the desired directory
         // await sdapi.requestSavePng(base64_image, image_name)
         await document_util.saveFileInSubFolder(
@@ -155,7 +159,7 @@ class hordeGenerator {
             height
         )
 
-        const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
+        const base64_image = file_util._arrayBufferToBase64(image_buffer) //convert the buffer to base64
         //send the base64 to the server to save the file in the desired directory
         // await sdapi.requestSavePng(base64_image, image_name)
         await document_util.saveFileInSubFolder(
@@ -321,6 +325,7 @@ class hordeGenerator {
         }
     }
     async postGeneration() {
+        //FIXME: unresolved function
         toggleTwoButtonsByClass(false, 'btnGenerateClass', 'btnInterruptClass')
     }
     async processHordeResult() {
@@ -348,6 +353,7 @@ class hordeGenerator {
                     const url = image_horde_container.img
                     const image_file_name = general.newOutputImageName('webp')
 
+                    //FIXME: unresolved function
                     const image_layer = await downloadItExe(
                         url,
                         writeable_entry,

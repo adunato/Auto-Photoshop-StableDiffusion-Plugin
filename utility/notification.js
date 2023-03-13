@@ -1,6 +1,9 @@
 const dialog_box = require('../dialog_box')
 const psapi = require('../psapi')
 const selection = require('../selection')
+const Enum = require('../enum')
+const session = require('./session')
+const app = window.require('photoshop').app
 class Notification {
     static {}
     static async webuiIsOffline() {
@@ -88,16 +91,26 @@ class Notification {
             return false
         } else if (r1 === 'Rectangular Marquee') {
             console.log('Rectangular Marquee')
-            psapi.selectMarqueeRectangularToolExe()
+            await psapi.selectMarqueeRectangularToolExe()
             return false // should this be false?! what does true and false means in this context?! Yes: it should be false since boolean value represent wither we have an active selection area or not
         } else if (r1 === 'Continue Session') {
-            await activateSessionSelectionArea()
+            await session.GenerationSession.instance().activateSessionSelectionArea()
             return true
         }
         return false
     }
 }
+async function displayWebUIStatusNotification(automatic_status) {
+    if (automatic_status === Enum.AutomaticStatusEnum['RunningWithApi']) {
+        //do nothing
+    } else if (automatic_status === Enum.AutomaticStatusEnum['RunningNoApi']) {
+        await Notification.webuiAPIMissing()
+    } else if (automatic_status === Enum.AutomaticStatusEnum['Offline']) {
+        await Notification.webuiIsOffline()
+    }
+}
 
 module.exports = {
     Notification,
+    displayWebUIStatusNotification,
 }

@@ -1,8 +1,9 @@
 const html_manip = require('./html_manip')
 const presets = require('./presets/preset')
-const layer_util = require('../utility/layer')
-const psapi = require('../psapi')
+const session = require('./session')
 const GenerationSettings = require('./generation_settings')
+const app_events = require('./app_events')
+const selection = require('../selection')
 const { executeAsModal } = require('photoshop').core
 class UI {
     static #instance = null
@@ -18,7 +19,18 @@ class UI {
         if (!UI.#instance) {
             UI.#instance = this
         }
+        this.SubscribeToEvents()
         return UI.#instance
+    }
+
+    SubscribeToEvents() {
+        app_events.selectionModeChangedEvent.subscribe(
+            UI.instance().generateModeUI
+        )
+        app_events.generateMoreEvent.subscribe(UI.instance().generateMoreUI)
+        app_events.resolutionSizeChangedEvent.subscribe(
+            UI.instance().updateResDifferenceLabel
+        )
     }
 
     onStartSessionUI() {
@@ -121,31 +133,31 @@ class UI {
             element.textContent = textContent
         })
     }
-}
 
-// const defaultSettings = {
-//   model: null,
-//   prompt_shortcut: null,
-//   positive_prompt: "",
-//   negative_prompt: "",
-//   selection_mode: null,
-//   batch_number: 1,
-//   steps: 20,
-//   width: 512 ,
-//   height:512,
-//   firstphase_width:512,
-//   firstphase_height:512,
-//   cfg:7,
-//   denoising_strength:0.7,
-//   hi_res_denoising_strength:0.7,
-//   mask_blur: 8,
-//   inpaint_at_full_res: false,
-//   hi_res_fix:false,
-//   inpaint_padding:0,
-//   seed:-1,
-//   samplers: null,
-//   mask_content:null
-//   }
+    async updateResDifferenceLabel() {
+        const ratio = await selection.Selection.getImageToSelectionDifference()
+        const arrow = ratio >= 1 ? '↑' : '↓'
+        let final_ratio = ratio // this ratio will always be >= 1
+        if (ratio >= 1) {
+            // percentage = percentage >= 1 ? percentage : 1 / percentage
+
+            // const percentage_str = `${arrow}X${percentage.toFixed(2)}`
+
+            // console.log('scale_info_str: ', scale_info_str)
+            // console.log('percentage_str: ', percentage_str)
+            document
+                .getElementById('res-difference')
+                .classList.remove('res-decrease')
+        } else {
+            final_ratio = 1 / ratio
+            document
+                .getElementById('res-difference')
+                .classList.add('res-decrease')
+        }
+        const ratio_str = `${arrow}x${final_ratio.toFixed(2)}`
+        document.getElementById('res-difference').innerText = ratio_str
+    }
+}
 
 class UIElement {
     constructor() {
@@ -157,7 +169,7 @@ class UIElement {
     getValue() {}
 }
 function createUIElement(getter, setter) {
-    let ui_element_obj = new ui.UIElement()
+    let ui_element_obj = new UIElement()
     ui_element_obj.getValue = getter
     ui_element_obj.setValue = setter
     return ui_element_obj
@@ -165,9 +177,6 @@ function createUIElement(getter, setter) {
 class UISettings {
     // get and set the settings of the ui. the stable diffusion settings not the human friendly settings
     constructor() {
-        // this.width = new ui.UIElement()
-        // this.width.getValue = html_manip.getWidth
-        // this.width.setValue = html_manip.autoFillInWidth
         this.width = createUIElement(
             html_manip.getWidth,
             html_manip.autoFillInWidth

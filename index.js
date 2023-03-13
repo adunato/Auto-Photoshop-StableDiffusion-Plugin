@@ -1,16 +1,9 @@
-// import {helloHelper} from 'helper.js'
-// helloHelper2 = require('./helper.js')
-// for organizational proposes
-// let g_sdapi_path = 'sdapi'
 let g_version = 'v1.2.1'
-let g_sd_url = 'http://127.0.0.1:7860'
 let g_online_data_url =
     'https://raw.githubusercontent.com/AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin/master/utility/online_data.json'
 const Enum = require('./enum')
 const helper = require('./helper')
 const sd_tab = require('./utility/tab/sd')
-// let g_sdapi_path = 'sdapi_py_re'
-// const sdapi = require(`./${g_sdapi_path}`)
 const sdapi = require('./sdapi_py_re')
 
 // const exportHelper = require('./export_png')
@@ -21,9 +14,7 @@ const app = window.require('photoshop').app
 const { batchPlay } = require('photoshop').action
 const { executeAsModal } = require('photoshop').core
 const dialog_box = require('./dialog_box')
-// const {entrypoints} = require('uxp')
 const html_manip = require('./utility/html_manip')
-// const export_png = require('./export_png')
 const viewer = require('./viewer')
 const selection = require('./selection')
 const layer_util = require('./utility/layer')
@@ -45,6 +36,7 @@ const note = require('./utility/notification')
 const sampler_data = require('./utility/sampler')
 const settings_tab = require('./utility/tab/settings')
 const control_net = require('./utility/tab/control_net')
+const notification = require('./utility/notification')
 
 let g_horde_generator = new horde_native.hordeGenerator()
 let g_automatic_status = Enum.AutomaticStatusEnum['Offline']
@@ -57,44 +49,6 @@ require('photoshop').action.addNotificationListener(
     ['set', 'move'],
     session.GenerationSession.instance().selectionEventHandler
 )
-// document
-//   .getElementById('btnLinkCurrentDocument')
-//   .addEventListener('click', async () => {
-//     await getUniqueDocumentId()
-//   })
-
-// attach event listeners for tabs
-//REFACTOR: move to html_manip.js (?) - if there is no business logic here and it's only for UI.
-Array.from(document.querySelectorAll('.sp-tab')).forEach((theTab) => {
-    theTab.onclick = () => {
-        try {
-            // localStorage.setItem("currentTab", theTab.getAttribute("id"));
-            Array.from(document.querySelectorAll('.sp-tab')).forEach((aTab) => {
-                if (aTab.getAttribute('id') === theTab.getAttribute('id')) {
-                    aTab.classList.add('selected')
-                } else {
-                    aTab.classList.remove('selected')
-                }
-            })
-            Array.from(document.querySelectorAll('.sp-tab-page')).forEach(
-                (tabPage) => {
-                    if (
-                        tabPage
-                            .getAttribute('id')
-                            .startsWith(theTab.getAttribute('id'))
-                    ) {
-                        tabPage.classList.add('visible-hack')
-                    } else {
-                        tabPage.classList.remove('visible-hack')
-                    }
-                }
-            )
-        } catch (e) {
-            console.warn(e)
-        }
-    }
-})
-//REFACTOR: move to events.js
 document.getElementById('sp-viewer-tab').addEventListener('click', async () => {
     if (
         session.GenerationSession.instance().isActive() &&
@@ -122,103 +76,6 @@ document
             'batchNumber-steps-container'
         )
     })
-// entrypoints.setup({
-
-//   panels:{
-//     vanilla: ()=>{
-//       console.log("you are in the vanilla panel")
-//     },
-//     experimental_1: ()=>{
-//       console.log("you are in the experimental_1 panel")
-
-//     }
-//   }
-// }
-//   )
-// just a number that shouldn't unique enough that we will use when save files.
-// each session will get a number from 1 to 1000000
-//REFACTOR: move to session.js
-//REFACTOR: move to helpers.js (or other utility file)
-function getSelectedText() {
-    // JavaScript
-    //     // Obtain the object reference for the <textarea>
-    // const txtarea = document.getElementById("taPrompt");
-    const promptTextarea = document.querySelector('#taPrompt')
-    console.log('promptTextarea: ', promptTextarea.value)
-    //     // Obtain the index of the first selected character
-    var start = promptTextarea.selectionStart
-    console.log('start: ', start)
-    //     // Obtain the index of the last selected character
-    //     var finish = txtarea.selectionEnd;
-    //     console.log("finish: ",finish)
-
-    //     // Obtain the selected text
-    //     var sel = txtarea.value.substring(start, finish);
-    //     console.log("selected textarea: ", sel)
-
-    // Do something with the selected content
-}
-//REFACTOR: move to helpers.js
-// setInterval(getSelectedText,2000)
-function getCommentedString() {
-    // const text = document.getElementById("taPrompt").value
-    // let text = `Visit /*W3Schools
-    // cute, girl, painterly
-    // *\\ any text
-    // and prompt`;
-    // let text = `cute cat /*by greg
-
-    // and artgerm
-
-    //  */ and famous artist`
-    let text = `Visit /*W3Schools 
-  cute, girl, painterly   
-  */ any text
-  and prompt
-
-
-
-
- cute cat  /*by greg 
-
-  and artgerm 
-  
-   */ and famous artist`
-    console.log('getCommentedString: text: ', text)
-
-    // let pattern = /(\/)(\*)(\s|\S)*\*\\/g;
-    let pattern = /(\/)(\*)(\s|\S)*?(\*\/)/g
-
-    let result = text.match(pattern)
-    console.log('getCommentedString: ', result)
-}
-
-//REFACTOR: move to helpers.js
-function tempDisableElement(element, time) {
-    element.classList.add('disableBtn')
-    element.disabled = true
-    // element.style.opacity = '0.65'
-    // element.style.cursor = 'not-allowed'
-    setTimeout(function () {
-        element.disabled = false
-        element.classList.remove('disableBtn')
-        // element.style.opacity = '1.0'
-        // element.style.cursor = 'default'
-    }, time)
-}
-
-//REFACTOR: move to the notfication.js
-async function displayNotification(automatic_status) {
-    if (automatic_status === Enum.AutomaticStatusEnum['RunningWithApi']) {
-        //do nothing
-    } else if (
-        g_automatic_status === Enum.AutomaticStatusEnum['RunningNoApi']
-    ) {
-        await note.Notification.webuiAPIMissing()
-    } else if (g_automatic_status === Enum.AutomaticStatusEnum['Offline']) {
-        await note.Notification.webuiIsOffline()
-    }
-}
 //REFACTOR: move to sdapi.js
 async function checkAutoStatus() {
     try {
@@ -260,7 +117,7 @@ async function refreshUI() {
         }
 
         g_automatic_status = await checkAutoStatus()
-        await displayNotification(g_automatic_status)
+        await notification.displayWebUIStatusNotification(g_automatic_status)
 
         const bSamplersStatus = await initSamplers()
 
@@ -423,84 +280,6 @@ function promptShortcutExample() {
     document.getElementById('taPromptShortcut').value = JSONInPrettyFormat
     return prompt_shortcut_example
 }
-//REFACTOR: move to generation_settings.js // Note: delete this function use UISettings.autoFillInSettings instead
-// function autoFillInSettings(metadata_json) {
-//     try {
-//         metadata_json1 = {
-//             prompt: 'cute cat, A full portrait of a beautiful post apocalyptic offworld arctic explorer, intricate, elegant, highly detailed, digital painting, artstation, concept art, smooth, sharp focus, illustration\nNegative prompt:  ((((ugly)))), (((duplicate))), ((morbid)), ((mutilated)), out of frame, extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), gross proportions, (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck)))',
-//             Steps: '20',
-//             Sampler: 'Euler a',
-//             'CFG scale': '7.0',
-//             Seed: '2300061620',
-//             Size: '512x512',
-//             'Model hash': '3e16efc8',
-//             'Seed resize from': '-1x-1',
-//             'Denoising strength': '0',
-//             'Conditional mask weight': '1.0',
-//         }
-
-//         //sometime the negative prompt is stored within the prompt
-//         function extractNegativePrompt(prompt) {
-//             const splitter = '\nNegative prompt:'
-//             const prompts = prompt.split(splitter)
-//             console.log('prompts: ', prompts)
-//             let negative_prompt = ''
-//             if (prompts.length > 1) {
-//                 negative_prompt = prompts[1].trim()
-//             }
-//             //propmt = prompt[0]
-
-//             return [prompts[0], negative_prompt]
-//         }
-//         let [prompt, negative_prompt] = extractNegativePrompt(
-//             metadata_json['prompt']
-//         )
-//         negative_prompt = metadata_json['Negative prompt'] || negative_prompt
-
-//         html_manip.autoFillInPrompt(prompt)
-//         html_manip.autoFillInNegativePrompt(negative_prompt)
-
-//         document.getElementById('tiNumberOfSteps').value =
-//             metadata_json['Steps']
-
-//         document.getElementById('slCfgScale').value = metadata_json['CFG scale']
-//         document.getElementById('tiSeed').value = metadata_json['Seed']
-
-//         // = metadata_json['Denoising strength']
-//         html_manip.autoFillInDenoisingStrength(
-//             metadata_json['Denoising strength']
-//         )
-
-//         model_title = html_manip.autoFillInModel(metadata_json['Model hash'])
-//         sdapi.requestSwapModel(model_title)
-
-//         const [width, height] = metadata_json['Size'].split('x')
-//         console.log('width, height: ', width, height)
-//         html_manip.autoFillInWidth(width)
-//         html_manip.autoFillInHeight(height)
-//         html_manip.autoFillInSampler(metadata_json['Sampler'])
-//         if (metadata_json.hasOwnProperty('First pass size')) {
-//             // chHiResFixs
-//             const [firstphase_width, firstphase_height] =
-//                 metadata_json['First pass size'].split('x')
-//             html_manip.setHiResFixs(true)
-//             html_manip.autoFillInHiResFixs(firstphase_width, firstphase_height)
-//             html_manip.autoFillInSliderUi(
-//                 metadata_json['Denoising strength'],
-//                 'hrDenoisingStrength',
-//                 'hDenoisingStrength',
-//                 100
-//             )
-//         } else {
-//             //
-//             html_manip.setHiResFixs(false)
-//         }
-
-//         // document.getElementById('tiSeed').value = metadata_json["Seed"]
-//     } catch (e) {
-//         console.error(`autoFillInSettings: ${e}`)
-//     }
-// }
 
 //**********Start: global variables
 let prompt_dir_name = ''
@@ -1676,62 +1455,6 @@ async function getExtraSettings() {
     }
     return payload
 }
-//REFACTOR: move to generation_settings.js
-async function getExtraSettings() {
-    let payload = {}
-    try {
-        const html_manip = require('./utility/html_manip')
-        const upscaling_resize = html_manip.getUpscaleSize()
-        const gfpgan_visibility = html_manip.getGFPGANVisibility()
-        const codeformer_visibility = html_manip.getCodeFormerVisibility()
-        const codeformer_weight = html_manip.getCodeFormerWeight()
-        const selection_info = await selection.Selection.getSelectionInfoExe()
-        const width = selection_info.width * upscaling_resize
-        const height = selection_info.height * upscaling_resize
-        //resize_mode = 0 means "resize to upscaling_resize"
-        //resize_mode = 1 means "resize to width and height"
-        payload['resize_mode'] = 0
-        payload['show_extras_results'] = 0
-        payload['gfpgan_visibility'] = gfpgan_visibility
-        payload['codeformer_visibility'] = codeformer_visibility
-        payload['codeformer_weight'] = codeformer_weight
-        payload['upscaling_resize'] = upscaling_resize
-        payload['upscaling_resize_w'] = width
-        payload['upscaling_resize_h'] = height
-        payload['upscaling_crop'] = true
-        const upscaler1 = document.querySelector('#hrModelsMenuUpscale1').value
-        payload['upscaler_1'] = upscaler1 === undefined ? 'None' : upscaler1
-        const upscaler2 = document.querySelector('#hrModelsMenuUpscale2').value
-        payload['upscaler_2'] = upscaler2 === undefined ? 'None' : upscaler2
-        const extras_upscaler_2_visibility = html_manip.getUpscaler2Visibility()
-        payload['extras_upscaler_2_visibility'] = extras_upscaler_2_visibility
-        payload['upscale_first'] = false
-        const uniqueDocumentId = await document_util.getUniqueDocumentId()
-        payload['uniqueDocumentId'] = uniqueDocumentId
-
-        // const layer = await app.activeDocument.activeLayers[0]
-        const layer = await app.activeDocument.activeLayers[0]
-        const old_name = layer.name
-
-        // image_name = await app.activeDocument.activeLayers[0].name
-
-        //convert layer name to a file name
-        let image_name = psapi.layerNameToFileName(
-            old_name,
-            layer.id,
-            session.GenerationSession.instance().random_session_id
-        )
-        image_name = `${image_name}.png`
-
-        const base64_image =
-            session.GenerationSession.instance().activeBase64InitImage
-
-        payload['image'] = base64_image
-    } catch (e) {
-        console.error(e)
-    }
-    return payload
-}
 //REFACTOR: move to generation.js
 async function generateImg2Img(settings) {
     let json = {}
@@ -1848,7 +1571,9 @@ async function easyModeGenerate(mode) {
             backend_type === backendTypeEnum['Auto1111HordeExtension']
         ) {
             g_automatic_status = await checkAutoStatus()
-            await displayNotification(g_automatic_status)
+            await notification.displayWebUIStatusNotification(
+                g_automatic_status
+            )
             if (
                 g_automatic_status === Enum.AutomaticStatusEnum['Offline'] ||
                 g_automatic_status === Enum.AutomaticStatusEnum['RunningNoApi']
@@ -2180,7 +1905,7 @@ async function generate(settings, mode) {
 Array.from(document.getElementsByClassName('btnGenerateClass')).forEach(
     (btn) => {
         btn.addEventListener('click', async (evt) => {
-            tempDisableElement(evt.target, 5000)
+            html_manip.tempDisableElement(evt.target, 5000)
             await easyModeGenerate(GenerationSettings.sd_mode)
         })
     }
@@ -2190,7 +1915,7 @@ document
     .getElementById('btnRefreshModels')
     .addEventListener('click', async (e) => {
         await refreshUI()
-        tempDisableElement(e.target, 3000)
+        html_manip.tempDisableElement(e.target, 3000)
     })
 //REFACTOR: move to events.js
 document.querySelector('#mModelsMenu').addEventListener('change', (evt) => {
@@ -2486,7 +2211,7 @@ async function viewerThumbnailclickHandler(e, viewer_obj_owner) {
 function createViewerImgHtml(output_dir_relative, image_path, base64_image) {
     const img = document.createElement('img')
     // img.src = `${output_dir_relative}/${image_path}`
-    img.src = psapi.base64ToSrc(base64_image)
+    img.src = file_util.base64ToSrc(base64_image)
     img.className = 'viewer-image'
     console.log('image_path: ', image_path)
     // img.dataset.image_id = layer_id
@@ -3112,23 +2837,6 @@ async function downloadItExe(link, writeable_entry, image_file_name) {
     return new_layer
 }
 
-//REFACTOR: move to session.js or selection.js
-async function activateSessionSelectionArea() {
-    try {
-        if (
-            selection.Selection.isSelectionValid(
-                session.GenerationSession.instance().selectionInfo
-            )
-        ) {
-            await selection.reSelectMarqueeExe(
-                session.GenerationSession.instance().selectionInfo
-            )
-            await session.GenerationSession.instance().selectionEventHandler()
-        }
-    } catch (e) {
-        console.warn(e)
-    }
-}
 //REFACTOR: move to events.js
 document
     .getElementById('btnSelectionArea')
@@ -3143,7 +2851,7 @@ document
         // } catch (e) {
         //     console.warn(e)
         // }
-        await activateSessionSelectionArea()
+        await session.GenerationSession.instance().activateSessionSelectionArea()
     })
 //REFACTOR: move to ui.js
 function addPresetMenuItem(preset_title) {
@@ -3194,6 +2902,7 @@ const py_re = require('./utility/sdapi/python_replacement')
 const { UI } = require('./utility/ui')
 const GenerationSettings = require('./utility/generation_settings')
 const document_util = require('./utility/document_util')
+const file_util = require('./utility/file_util')
 
 function getDimensions(image) {
     return new Promise((resolve, reject) => {
@@ -3283,27 +2992,6 @@ Array.from(document.querySelectorAll('.rbSubTab')).forEach((rb) => {
     }
 })
 //REFACTOR: move to ui.js
-async function updateResDifferenceLabel() {
-    const ratio = await selection.Selection.getImageToSelectionDifference()
-    const arrow = ratio >= 1 ? '↑' : '↓'
-    let final_ratio = ratio // this ratio will always be >= 1
-    if (ratio >= 1) {
-        // percentage = percentage >= 1 ? percentage : 1 / percentage
-
-        // const percentage_str = `${arrow}X${percentage.toFixed(2)}`
-
-        // console.log('scale_info_str: ', scale_info_str)
-        // console.log('percentage_str: ', percentage_str)
-        document
-            .getElementById('res-difference')
-            .classList.remove('res-decrease')
-    } else {
-        final_ratio = 1 / ratio
-        document.getElementById('res-difference').classList.add('res-decrease')
-    }
-    const ratio_str = `${arrow}x${final_ratio.toFixed(2)}`
-    document.getElementById('res-difference').innerText = ratio_str
-}
 //REFACTOR: move to events.js
 document
     .getElementById('btnSaveHordeSettings')

@@ -24,6 +24,8 @@ const layer_util = require('./utility/layer')
 const session = require('./utility/session')
 const thumbnail = require('./thumbnail')
 const html_manip = require('./utility/html_manip')
+const file_util = require('./utility/file_util')
+const app_events = require('./utility/app_events')
 const ViewerObjState = {
     Delete: 'delete',
     Unlink: 'unlink',
@@ -174,6 +176,7 @@ class ViewerImage {
             // await this.select(true) //select() does take arguments
             // this.active(true)
             await executeAsModal(async () => {
+                //FIXME unresolved function
                 await this.click(Enum.clickTypeEnum['Click'])
             })
 
@@ -221,6 +224,7 @@ class ViewerImage {
             button.style.display = 'none'
         }
         button.addEventListener('click', async () => {
+            //FIXME unresolved function
             await useOutputImageAsInitImage()
         })
 
@@ -651,11 +655,13 @@ class ViewerManager {
         this.init_image_container = document.getElementById(
             'divInitImageViewerContainer'
         )
-        session.endSessionEvent.subscribe(this.onSessionEnd)
-        session.acceptAllEvent.subscribe(this.acceptAll)
-        session.discardAllEvent.subscribe(this.discardAll)
-        session.discardSelectedEvent.subscribe(this.discardSelected)
-        session.discardEvent.subscribe(this.discard)
+        app_events.endSessionEvent.subscribe(this.onSessionEnd.bind(this))
+        app_events.acceptAllEvent.subscribe(this.acceptAll.bind(this))
+        app_events.discardAllEvent.subscribe(this.discardAll.bind(this))
+        app_events.discardSelectedEvent.subscribe(
+            this.discardSelected.bind(this)
+        )
+        app_events.discardEvent.subscribe(this.discard.bind(this))
         return ViewerManager.#instance
     }
 
@@ -718,7 +724,8 @@ class ViewerManager {
                 // this.maskLayersJson[path].img_html.src = new_path
 
                 // this.pathToViewerImage[path].img_html.src = new_path
-                this.pathToViewerImage[path].img_html.src = base64ToSrc(base64)
+                this.pathToViewerImage[path].img_html.src =
+                    file_util.base64ToSrc(base64)
             }
         } catch (e) {
             console.warn(e)
@@ -864,6 +871,7 @@ class ViewerManager {
             const auto_delete = this.initImageLayersJson[path].autoDelete
             const base64_image =
                 session.GenerationSession.instance().base64initImages[path]
+            //FIXME: unresolved function
             await loadInitImageViewerObject(
                 group,
                 snapshot,
@@ -884,10 +892,11 @@ class ViewerManager {
             })
             const layer = this.maskGroup
             // const layer = await app.activeDocument.activeLayers[0]
-            const mask_info = await this.silentSetInitImageMask(
-                layer,
-                this.random_session_id
-            )
+            const mask_info =
+                await session.GenerationSession.instance().silentSetInitImageMask(
+                    layer,
+                    this.random_session_id
+                )
             const image_name = mask_info['name']
             const path = `./server/python_server/init_images/${image_name}`
             this.addMaskLayers(layer, path, false, mask_info['base64']) //can be autodeleted?

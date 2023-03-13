@@ -7,6 +7,7 @@ const control_net = require('./utility/tab/control_net')
 const app = window.require('photoshop').app
 const html_manip = require('./utility/html_manip')
 const session = require('./utility/session')
+const settings = require('./utility/tab/settings')
 //javascript plugin can't read images from local directory so we send a request to local server to read the image file and send it back to plugin as image string base64
 async function getInitImage(init_image_name) {
     console.log('getInitImage(): get Init Image from the server :')
@@ -14,35 +15,10 @@ async function getInitImage(init_image_name) {
         init_image_name: init_image_name,
     }
 
-    // const full_url = 'http://127.0.0.1:8000/getInitImage/'
-    // console.log(full_url)
-    // console.log('getInitImage payload:', payload)
-    // let request = await fetch(full_url, {
-    //     method: 'POST',
-    //     headers: {
-    //         Accept: 'application/json',
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(payload),
-    //     // "body": payload
-    // })
-
-    // let json = await request.json()
-
-    // console.log('json:')
-    // console.dir(json)
-    // base64data = json.init_image_str
-    // image_src = `data:image/png;base64, ${base64data}`
     console.warn('this function is deprecated!')
     const image_src =
         'https://im ages.pexels.com/photos/1386604/pexels-photo-1386604.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
     return image_src
-
-    // console.log(img.src)
-
-    // let img_blob =  await (await fetch(img.src)).blob()
-    // console.log("img_blob:")
-    // console.dir(img_blob)
 }
 async function requestTxt2Img(payload) {
     try {
@@ -89,7 +65,7 @@ async function requestImg2Img(payload) {
         // })
 
         // let json = await request.json()
-        let json = await py_re.img2ImgRequest(g_sd_url, payload)
+        let json = await py_re.img2ImgRequest(settings.sd_url, payload)
         console.log('requestImg2Img json:')
         console.dir(json)
 
@@ -105,7 +81,7 @@ async function requestProgress() {
     try {
         console.log('requestProgress: ')
 
-        const full_url = `${g_sd_url}/sdapi/v1/progress?skip_current_image=false`
+        const full_url = `${settings.sd_url}/sdapi/v1/progress?skip_current_image=false`
         let request = await fetch(full_url)
         json = await request.json()
         console.log('progress json:')
@@ -121,7 +97,7 @@ async function requestProgress() {
 async function requestGetModels() {
     console.log('requestGetModels: ')
     let json = []
-    const full_url = `${g_sd_url}/sdapi/v1/sd-models`
+    const full_url = `${settings.sd_url}/sdapi/v1/sd-models`
     try {
         let request = await fetch(full_url)
         json = await request.json()
@@ -138,7 +114,7 @@ async function requestGetSamplers() {
     try {
         console.log('requestGetSamplers: ')
 
-        const full_url = `${g_sd_url}/sdapi/v1/samplers`
+        const full_url = `${settings.sd_url}/sdapi/v1/samplers`
         let request = await fetch(full_url)
         json = await request.json()
         console.log('samplers json:')
@@ -153,7 +129,7 @@ async function requestSwapModel(model_title) {
     console.log('requestSwapModel: ')
     // const full_url = 'http://127.0.0.1:8000/swapModel'
 
-    const full_url = `${g_sd_url}/sdapi/v1/options`
+    const full_url = `${settings.sd_url}/sdapi/v1/options`
     payload = {
         sd_model_checkpoint: model_title,
     }
@@ -176,7 +152,7 @@ async function requestSwapModel(model_title) {
 }
 
 async function requestInterrupt() {
-    const full_url = `${g_sd_url}/sdapi/v1/interrupt`
+    const full_url = `${settings.sd_url}/sdapi/v1/interrupt`
     try {
         console.log('requestInterrupt: ')
 
@@ -219,32 +195,6 @@ async function getVersionRequest() {
     //     return version
     // }
     return current_version
-}
-
-async function changeSdUrl(new_sd_url) {
-    // version = "v0.0.0"
-    console.log('changeSdUrl: new_sd_url:', new_sd_url)
-    try {
-        payload = {
-            sd_url: new_sd_url,
-        }
-
-        // const full_url = `${g_sd_url}/sd_url/`
-        // console.log('changeSdUrl: payload: ', payload)
-        // let request = await fetch(full_url, {
-        //     method: 'POST',
-        //     headers: {
-        //         Accept: 'application/json',
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(payload),
-        // })
-
-        g_sd_url = new_sd_url
-        // console.log('changeSdUrl: request: ', request)
-    } catch (e) {
-        console.warn(e)
-    }
 }
 
 // function printTheJSONInPrettyFormat(json) {
@@ -340,7 +290,7 @@ async function savePromptShortcut(prompt_shortcut) {
     return json['prompt_shortcut']
 }
 async function setInpaintMaskWeight(value) {
-    const full_url = `${g_sd_url}/sdapi/v1/options`
+    const full_url = `${settings.sd_url}/sdapi/v1/options`
     try {
         const payload = {
             inpainting_mask_weight: value,
@@ -361,7 +311,7 @@ async function setInpaintMaskWeight(value) {
 async function requestGetConfig() {
     console.log('requestGetConfig: ')
     let json = []
-    const full_url = `${g_sd_url}/config`
+    const full_url = `${settings.sd_url}/config`
     try {
         let request = await fetch(full_url)
         json = await request.json()
@@ -375,7 +325,7 @@ async function requestGetConfig() {
 async function requestGetOptions() {
     console.log('requestGetOptions: ')
     let json = null
-    const full_url = `${g_sd_url}/sdapi/v1/options`
+    const full_url = `${settings.sd_url}/sdapi/v1/options`
     try {
         let request = await fetch(full_url)
         if (request.status === 404) {
@@ -538,7 +488,7 @@ async function imageSearch(keywords) {
 async function requestExtraSingleImage(payload) {
     console.log('requestExtraSingleImage(): about to send a fetch request')
     try {
-        let json = await py_re.extraSingleImageRequest(g_sd_url, payload)
+        let json = await py_re.extraSingleImageRequest(settings.sd_url, payload)
         console.log('requestExtraSingleImage json:')
         console.dir(json)
 
@@ -552,7 +502,7 @@ async function requestExtraSingleImage(payload) {
 async function requestGetUpscalers() {
     console.log('requestGetUpscalers: ')
     let json = []
-    const full_url = `${g_sd_url}/sdapi/v1/upscalers`
+    const full_url = `${settings.sd_url}/sdapi/v1/upscalers`
     try {
         let request = await fetch(full_url)
         json = await request.json()
@@ -567,7 +517,7 @@ async function requestGetUpscalers() {
 async function requestControlNetTxt2Img(plugin_settings) {
     console.log('requestControlNetTxt2Img: ')
 
-    const full_url = `${g_sd_url}/controlnet/txt2img`
+    const full_url = `${settings.sd_url}/controlnet/txt2img`
     const control_net_settings =
         control_net.mapPluginSettingsToControlNet(plugin_settings)
     let control_networks = []
@@ -653,7 +603,7 @@ async function requestControlNetImg2Img(plugin_settings) {
     console.log('requestControlNetImg2Img: ')
     // const full_url = 'http://127.0.0.1:8000/swapModel'
 
-    const full_url = `${g_sd_url}/controlnet/img2img`
+    const full_url = `${settings.sd_url}/controlnet/img2img`
     const control_net_settings =
         control_net.mapPluginSettingsToControlNet(plugin_settings)
 
@@ -726,7 +676,7 @@ async function requestControlNetImg2Img(plugin_settings) {
 async function isWebuiRunning() {
     console.log('isWebuiRunning: ')
     let json = []
-    const full_url = `${g_sd_url}/user`
+    const full_url = `${settings.sd_url}/user`
     try {
         let request = await fetch(full_url)
         json = await request.json()
@@ -748,7 +698,6 @@ module.exports = {
     requestInterrupt,
     requestGetSamplers,
     getVersionRequest,
-    changeSdUrl,
     loadPromptShortcut,
     savePromptShortcut,
     loadHistory,

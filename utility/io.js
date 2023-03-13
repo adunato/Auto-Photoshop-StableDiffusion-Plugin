@@ -5,6 +5,8 @@ const general = require('./general')
 const Jimp = require('../jimp/browser/lib/jimp.min')
 const selection = require('../selection')
 const document_util = require('./document_util')
+const file_util = require('./file_util')
+const app = window.require('photoshop').app
 
 const formats = require('uxp').storage.formats
 const storage = require('uxp').storage
@@ -158,7 +160,7 @@ class IO {
         folder,
         image_name = 'temp_base64Png.png'
     ) {
-        const arrayBuffer = psapi._base64ToArrayBuffer(base64_png)
+        const arrayBuffer = file_util._base64ToArrayBuffer(base64_png)
 
         // const folder = await storage.localFileSystem.getTemporaryFolder()
 
@@ -199,7 +201,8 @@ class IO {
 
                     //convert the arraybuffer to base64Webp string
 
-                    base64_webp = psapi._arrayBufferToBase64(ArrayBufferWebp)
+                    base64_webp =
+                        file_util._arrayBufferToBase64(ArrayBufferWebp)
                 } catch (e) {
                     console.warn(e)
                 }
@@ -219,7 +222,7 @@ class IO {
                 })
                 console.log('webp arrayBuffer:', arrayBuffer)
 
-                const base64_image = psapi._arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
+                const base64_image = file_util._arrayBufferToBase64(arrayBuffer) //convert the buffer to base64
                 console.log('base64_image:', base64_image)
                 webp_base64 = base64_image
             })
@@ -245,10 +248,10 @@ class IO {
                 image_name
             )
 
-            psapi.setVisibleExe(layer, true)
+            await psapi.setVisibleExe(layer, true)
             await layer_util.Layer.scaleTo(layer, width, height) //
             await layer_util.Layer.moveTo(layer, to_x, to_y) //move to the top left corner
-            psapi.setVisibleExe(layer, true)
+            await psapi.setVisibleExe(layer, true)
         }
         return layer
     }
@@ -316,7 +319,7 @@ class IO {
                 height
             )
 
-            const base64_image = psapi._arrayBufferToBase64(image_buffer) //convert the buffer to base64
+            const base64_image = file_util._arrayBufferToBase64(image_buffer) //convert the buffer to base64
             //send the base64 to the server to save the file in the desired directory
             // await sdapi.requestSavePng(base64_image, image_name)
             // await saveFileInSubFolder(base64_image, document_name, image_name)
@@ -502,7 +505,10 @@ class IOBase64ToLayer {
         //unselect all layers so that the imported layer get place at the top of the document
         await psapi.unselectActiveLayersExe()
 
-        const imported_layer = await psapi.base64ToFile(base64_png, image_name) //silent import into the document
+        const imported_layer = await file_util.base64ToFile(
+            base64_png,
+            image_name
+        ) //silent import into the document
 
         return imported_layer
     }

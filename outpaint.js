@@ -63,7 +63,7 @@ async function createSnapshot() {
             console.log('createSnapshot, layerIDs:', layerIDs)
 
             //select the layer since layerIDs don't seem to have an affect on moveToGroupCommand(), don't know why!!!!
-            psapi.selectLayers(duplicatedLayers)
+            await psapi.selectLayers(duplicatedLayers)
             let group_index = await psapi.getLayerIndex(groupLayer.id)
 
             await psapi.moveToGroupCommand(group_index - indexOffset, layerIDs)

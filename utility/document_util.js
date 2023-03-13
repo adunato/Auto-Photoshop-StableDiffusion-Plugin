@@ -1,4 +1,5 @@
 const psapi = require('../psapi')
+const file_util = require('./file_util')
 const storage = require('uxp').storage
 const app = window.require('photoshop').app
 
@@ -23,7 +24,7 @@ async function getInitImagesDir() {
     return init_folder
 }
 async function saveFileInSubFolder(b64Image, sub_folder_name, file_name) {
-    const img = psapi._base64ToArrayBuffer(b64Image)
+    const img = file_util._base64ToArrayBuffer(b64Image)
 
     const img_name = file_name
     const folder = await storage.localFileSystem.getDataFolder()
@@ -148,11 +149,11 @@ async function getDocFolder(doc_uuid) {
     }
 }
 
-async function openImageExe() {
-    await require('photoshop').core.executeAsModal(
-        document_util.openImageAction
-    )
-}
+// async function openImageExe() {
+//     await require('photoshop').core.executeAsModal(
+//         openImageAction
+//     )
+// }
 
 module.exports = {
     getCurrentDocFolder,
@@ -162,5 +163,5 @@ module.exports = {
     // openImageAction,
     getUniqueDocumentId,
     getDocFolder,
-    openImageExe,
+    // openImageExe,
 }
