@@ -757,6 +757,7 @@ class ViewerManager {
         return false
     }
     addOutputImage(layer, path) {
+        console.log('addOutputImage' + path)
         const outputImage = new OutputImage(layer, path, this)
 
         this.outputImages.push(outputImage)
@@ -764,6 +765,7 @@ class ViewerManager {
         return outputImage
     }
     addInitImage(group, snapshot, solid_background, path, auto_delete) {
+        console.log('addInitImage' + path)
         const initImage = new InitImage(
             group,
             snapshot,
@@ -777,6 +779,7 @@ class ViewerManager {
         return initImage
     }
     addMask(group, white_mark, solid_background, path) {
+        console.log('add mask' + path)
         const mask = new InitMaskImage(
             group,
             white_mark,
@@ -838,6 +841,7 @@ class ViewerManager {
         }
     }
     onSessionEnd() {
+        console.log('ViewerManager onSessionEnd')
         this.outputImages = []
         this.initImages = []
         this.initMaskImage = null
@@ -987,7 +991,6 @@ class ViewerManager {
             const random_img_src = 'https://source.unsplash.com/random'
             html_manip.setInitImageSrc(random_img_src)
             html_manip.setInitImageMaskSrc(random_img_src)
-
             // psapi.cleanLayers(last_gen_layers)
             await ViewerManager.instance().deleteNoneSelected(
                 ViewerManager.instance().pathToViewerImage

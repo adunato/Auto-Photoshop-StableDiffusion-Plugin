@@ -7,8 +7,12 @@ function createEvent(eventName) {
         unsubscribe(fn) {
             this.handlers = this.handlers.filter((handler) => handler !== fn)
         },
-        raise(data) {
-            this.handlers.forEach((handler) => handler(data))
+        async raise(data) {
+            await Promise.all(
+                this.handlers.map(async (handler) => {
+                    await handler(data)
+                })
+            )
         },
         get name() {
             return eventName
