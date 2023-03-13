@@ -4,7 +4,9 @@ const { getExtensionType } = require('./utility/html_manip')
 const py_re = require('./utility/sdapi/python_replacement')
 const Enum = require('./enum')
 const control_net = require('./utility/tab/control_net')
-const document_util = require('./utility/document_util')
+const app = window.require('photoshop').app
+const html_manip = require('./utility/html_manip')
+const session = require('./utility/session')
 //javascript plugin can't read images from local directory so we send a request to local server to read the image file and send it back to plugin as image string base64
 async function getInitImage(init_image_name) {
     console.log('getInitImage(): get Init Image from the server :')

@@ -315,9 +315,10 @@ class GenerationSession {
                         GenerationSession.instance().selectionInfo
                     ) //new selection
                 ) {
-                    const selected_mode = this.getCurrentGenerationModeByValue(
-                        GenerationSettings.sd_mode
-                    )
+                    const selected_mode =
+                        GenerationSession.instance().getCurrentGenerationModeByValue(
+                            GenerationSettings.sd_mode
+                        )
                     ui.UI.instance().generateModeUI(selected_mode)
                 } else {
                     // it's the same selection and the session is active

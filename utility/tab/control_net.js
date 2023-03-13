@@ -3,6 +3,7 @@ const html_manip = require('../html_manip')
 const selection = require('../../selection')
 const note = require('../notification')
 const session = require('../session')
+const general = require('../general')
 const g_controlnet_max_supported_models = 3
 
 async function checkIfControlNetInstalled() {}
