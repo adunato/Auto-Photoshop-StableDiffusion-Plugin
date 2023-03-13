@@ -232,7 +232,7 @@ for (let index = 0; index < g_controlnet_max_supported_models; index++) {
         .addEventListener('input', (evt) => {
             const sd_value = general.mapRange(evt.target.value, 0, 100, 0, 1) // convert slider value to SD ready value
             document.getElementById(
-                'lControlNetGuidanceStrengthStart_' + index
+                'lControlNetGuidanceStrengthEnd_' + index
             ).textContent = Number(sd_value).toFixed(2)
         })
 
