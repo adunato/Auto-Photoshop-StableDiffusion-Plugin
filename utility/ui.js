@@ -4,6 +4,7 @@ const session = require('./session')
 const GenerationSettings = require('./generation_settings')
 const app_events = require('./app_events')
 const selection = require('../selection')
+const psapi = require('../psapi')
 const { executeAsModal } = require('photoshop').core
 class UI {
     static #instance = null
@@ -24,13 +25,12 @@ class UI {
     }
 
     SubscribeToEvents() {
-        app_events.selectionModeChangedEvent.subscribe(
-            UI.instance().generateModeUI
-        )
-        app_events.generateMoreEvent.subscribe(UI.instance().generateMoreUI)
+        app_events.selectionModeChangedEvent.subscribe(UI.generateModeUI)
+        app_events.generateMoreEvent.subscribe(UI.generateMoreUI)
         app_events.resolutionSizeChangedEvent.subscribe(
-            UI.instance().updateResDifferenceLabel
+            UI.updateResDifferenceLabel
         )
+        app_events.sessionSelectionEvent.subscribe(UI.selectionEventHandler)
     }
 
     onStartSessionUI() {
@@ -66,10 +66,10 @@ class UI {
             (element) => (element.style.display = 'inline-block')
         )
 
-        this.generateMoreUI()
+        UI.generateMoreUI()
     }
     onActiveSessionUI() {}
-    generateModeUI(mode) {
+    static generateModeUI(mode) {
         const generate_btns = Array.from(
             document.getElementsByClassName('btnGenerateClass')
         )
@@ -78,7 +78,7 @@ class UI {
         })
         html_manip.setGenerateButtonsColor('generate', 'generate-more')
     }
-    generateMoreUI() {
+    static generateMoreUI() {
         const generate_btns = Array.from(
             document.getElementsByClassName('btnGenerateClass')
         )
@@ -93,7 +93,7 @@ class UI {
         html_manip.setGenerateButtonsColor('generate-more', 'generate')
     }
 
-    onEndSessionUI() {
+    static onEndSessionUI() {
         const accept_class_btns = Array.from(
             document.getElementsByClassName('acceptClass')
         )
@@ -122,10 +122,10 @@ class UI {
             (element) => (element.style.display = 'none')
         )
 
-        this.generateModeUI(GenerationSettings.sd_mode)
+        UI.generateModeUI(GenerationSettings.sd_mode)
     }
 
-    setGenerateBtnText(textContent) {
+    static setGenerateBtnText(textContent) {
         const generate_btns = Array.from(
             document.getElementsByClassName('btnGenerateClass')
         )
@@ -134,8 +134,8 @@ class UI {
         })
     }
 
-    async updateResDifferenceLabel() {
-        const ratio = await selection.Selection.getImageToSelectionDifference()
+    static async updateResDifferenceLabel() {
+        const ratio = await UI.getImageToSelectionDifference()
         const arrow = ratio >= 1 ? '↑' : '↓'
         let final_ratio = ratio // this ratio will always be >= 1
         if (ratio >= 1) {
@@ -156,6 +156,89 @@ class UI {
         }
         const ratio_str = `${arrow}x${final_ratio.toFixed(2)}`
         document.getElementById('res-difference').innerText = ratio_str
+    }
+
+    static async getImageToSelectionDifference() {
+        const selectionInfo = await Selection.getSelectionInfoExe()
+
+        const width = html_manip.getWidth()
+        const height = html_manip.getHeight()
+        const scale_info_str = `${parseInt(width)}x${parseInt(
+            height
+        )} => ${parseInt(selectionInfo.width)}x${parseInt(
+            selectionInfo.height
+        )} `
+        let ratio =
+            (width * height) / (selectionInfo.width * selectionInfo.height)
+        return ratio
+    }
+
+    static async calcWidthHeightFromSelection() {
+        //set the width and height, hrWidth, and hrHeight using selection info and selection mode
+        const selection_mode = html_manip.getSelectionMode()
+        if (selection_mode === 'ratio') {
+            //change (width and height) and (hrWidth, hrHeight) to match the ratio of selection
+            const [width, height, hr_width, hr_height] =
+                await selection.selectionToFinalWidthHeight()
+
+            html_manip.autoFillInWidth(width)
+            html_manip.autoFillInHeight(height)
+            html_manip.autoFillInHRWidth(hr_width)
+            html_manip.autoFillInHRHeight(hr_height)
+        } else if (selection_mode === 'precise') {
+            const selectionInfo =
+                await selection.Selection.getSelectionInfoExe()
+            const [width, height, hr_width, hr_height] = [
+                selectionInfo.width,
+                selectionInfo.height,
+                0,
+                0,
+            ]
+            html_manip.autoFillInWidth(width)
+            html_manip.autoFillInHeight(height)
+        }
+    }
+
+    static async selectionEventHandler(event, descriptor) {
+        try {
+            console.log(event, descriptor)
+            const isSelectionActive = await psapi.checkIfSelectionAreaIsActive()
+            if (isSelectionActive) {
+                const current_selection = isSelectionActive // Note: don't use checkIfSelectionAreaIsActive to return the selection object, change this.
+                await UI.calcWidthHeightFromSelection()
+                if (
+                    await session.GenerationSession.instance().hasSelectionChanged(
+                        current_selection,
+                        session.GenerationSession.instance().selectionInfo
+                    ) //new selection
+                ) {
+                    const selected_mode =
+                        session.GenerationSession.instance().getCurrentGenerationModeByValue(
+                            GenerationSettings.sd_mode
+                        )
+                    await app_events.selectionModeChangedEvent.raise(
+                        selected_mode
+                    )
+                    // ui.UI.instance().generateModeUI(selected_mode)
+                } else {
+                    // it's the same selection and the session is active
+                    //indicate that the session will continue. only if the session we are in the same mode as the session's mode
+                    // startSessionUI// green color
+                    const current_mode = html_manip.getMode()
+                    if (
+                        session.GenerationSession.instance().isActive() && // the session is active
+                        session.GenerationSession.instance().isSameMode(
+                            current_mode
+                        ) //same mode
+                    ) {
+                        await app_events.generateMoreEvent.raise()
+                        // ui.UI.instance().generateMoreUI()
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(e)
+        }
     }
 }
 

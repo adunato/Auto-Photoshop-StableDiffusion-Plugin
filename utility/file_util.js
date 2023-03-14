@@ -13,75 +13,75 @@ function _arrayBufferToBase64(buffer) {
     }
     return window.btoa(binary)
 }
-async function _arrayBufferToBase64(image_path, entery) {
-    //silent importer
-
-    try {
-        console.log('placeEmbedded(): image_path: ', image_path)
-
-        const names = image_path.split('/')
-        const length = names.length
-        const image_name = names[length - 1]
-        const project_name = names[length - 2]
-        let pluginFolder = await fs.getPluginFolder()
-
-        const image_dir = `./server/python_server/output/${project_name}`
-        // image_path = "output/f027258e-71b8-430a-9396-0a19425f2b44/output- 1674323725.126322.png"
-
-        let img_dir = await pluginFolder.getEntry(image_dir)
-        // const file = await img_dir.createFile('output- 1674298902.0571606.png', {overwrite: true});
-
-        const file = await img_dir.createFile(image_name, { overwrite: true })
-
-        const img = await file.read({ format: formats.binary })
-        const token = await storage.localFileSystem.createSessionToken(file)
-        let place_event_result
-        await executeAsModal(async () => {
-            const result = await batchPlay(
-                [
-                    {
-                        _obj: 'placeEvent',
-                        ID: 6,
-                        null: {
-                            _path: token,
-                            _kind: 'local',
-                        },
-                        freeTransformCenterState: {
-                            _enum: 'quadCenterState',
-                            _value: 'QCSAverage',
-                        },
-                        offset: {
-                            _obj: 'offset',
-                            horizontal: {
-                                _unit: 'pixelsUnit',
-                                _value: 0,
-                            },
-                            vertical: {
-                                _unit: 'pixelsUnit',
-                                _value: 0,
-                            },
-                        },
-                        _isCommand: true,
-                        _options: {
-                            dialogOptions: 'dontDisplay',
-                        },
-                    },
-                ],
-                {
-                    synchronousExecution: true,
-                    modalBehavior: 'execute',
-                }
-            )
-            console.log('placeEmbedd batchPlay result: ', result)
-
-            place_event_result = result[0]
-        })
-
-        return place_event_result
-    } catch (e) {
-        console.warn(e)
-    }
-}
+// async function _arrayBufferToBase64(image_path, entery) {
+//     //silent importer
+//
+//     try {
+//         console.log('placeEmbedded(): image_path: ', image_path)
+//
+//         const names = image_path.split('/')
+//         const length = names.length
+//         const image_name = names[length - 1]
+//         const project_name = names[length - 2]
+//         let pluginFolder = await fs.getPluginFolder()
+//
+//         const image_dir = `./server/python_server/output/${project_name}`
+//         // image_path = "output/f027258e-71b8-430a-9396-0a19425f2b44/output- 1674323725.126322.png"
+//
+//         let img_dir = await pluginFolder.getEntry(image_dir)
+//         // const file = await img_dir.createFile('output- 1674298902.0571606.png', {overwrite: true});
+//
+//         const file = await img_dir.createFile(image_name, { overwrite: true })
+//
+//         const img = await file.read({ format: formats.binary })
+//         const token = await storage.localFileSystem.createSessionToken(file)
+//         let place_event_result
+//         await executeAsModal(async () => {
+//             const result = await batchPlay(
+//                 [
+//                     {
+//                         _obj: 'placeEvent',
+//                         ID: 6,
+//                         null: {
+//                             _path: token,
+//                             _kind: 'local',
+//                         },
+//                         freeTransformCenterState: {
+//                             _enum: 'quadCenterState',
+//                             _value: 'QCSAverage',
+//                         },
+//                         offset: {
+//                             _obj: 'offset',
+//                             horizontal: {
+//                                 _unit: 'pixelsUnit',
+//                                 _value: 0,
+//                             },
+//                             vertical: {
+//                                 _unit: 'pixelsUnit',
+//                                 _value: 0,
+//                             },
+//                         },
+//                         _isCommand: true,
+//                         _options: {
+//                             dialogOptions: 'dontDisplay',
+//                         },
+//                     },
+//                 ],
+//                 {
+//                     synchronousExecution: true,
+//                     modalBehavior: 'execute',
+//                 }
+//             )
+//             console.log('placeEmbedd batchPlay result: ', result)
+//
+//             place_event_result = result[0]
+//         })
+//
+//         return place_event_result
+//     } catch (e) {
+//         console.warn(e)
+//     }
+// }
 
 function _base64ToArrayBuffer(base64) {
     const binary_string = window.atob(base64)

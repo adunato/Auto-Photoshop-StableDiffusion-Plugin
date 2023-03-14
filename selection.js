@@ -1,4 +1,3 @@
-const html_manip = require('./utility/html_manip')
 const { executeAsModal } = require('photoshop').core
 const batchPlay = require('photoshop').action.batchPlay
 const app = window.require('photoshop').app
@@ -122,31 +121,6 @@ function convertSelectionObjectToSelectionInfo(selection_obj) {
     return selection_info
 }
 
-async function calcWidthHeightFromSelection() {
-    //set the width and height, hrWidth, and hrHeight using selection info and selection mode
-    const selection_mode = html_manip.getSelectionMode()
-    if (selection_mode === 'ratio') {
-        //change (width and height) and (hrWidth, hrHeight) to match the ratio of selection
-        const [width, height, hr_width, hr_height] =
-            await selectionToFinalWidthHeight()
-
-        html_manip.autoFillInWidth(width)
-        html_manip.autoFillInHeight(height)
-        html_manip.autoFillInHRWidth(hr_width)
-        html_manip.autoFillInHRHeight(hr_height)
-    } else if (selection_mode === 'precise') {
-        const selectionInfo = await Selection.getSelectionInfoExe()
-        const [width, height, hr_width, hr_height] = [
-            selectionInfo.width,
-            selectionInfo.height,
-            0,
-            0,
-        ]
-        html_manip.autoFillInWidth(width)
-        html_manip.autoFillInHeight(height)
-    }
-}
-
 const SelectionInfoDesc = () => ({
     _obj: 'get',
     _target: [
@@ -229,28 +203,6 @@ class Selection {
 
     static reselectArea(selection_info) {}
     static isSameSelection(selection_info_1, selection_info_2) {}
-    static async getImageToSelectionDifference() {
-        const selectionInfo = await Selection.getSelectionInfoExe()
-
-        const width = html_manip.getWidth()
-        const height = html_manip.getHeight()
-        const scale_info_str = `${parseInt(width)}x${parseInt(
-            height
-        )} => ${parseInt(selectionInfo.width)}x${parseInt(
-            selectionInfo.height
-        )} `
-        let ratio =
-            (width * height) / (selectionInfo.width * selectionInfo.height)
-
-        // const arrow = percentage >= 1 ? '↑' : '↓'
-        // percentage = percentage >= 1 ? percentage : 1 / percentage
-
-        // const percentage_str = `${arrow}X${percentage.toFixed(2)}`
-
-        // console.log('scale_info_str: ', scale_info_str)
-        // console.log('percentage_str: ', percentage_str)
-        return ratio
-    }
 
     static {}
 }
@@ -260,6 +212,5 @@ module.exports = {
     selectBoundingBox,
     convertSelectionObjectToSelectionInfo,
     Selection,
-    calcWidthHeightFromSelection,
     reSelectMarqueeExe,
 }

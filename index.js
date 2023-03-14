@@ -37,6 +37,12 @@ const sampler_data = require('./utility/sampler')
 const settings_tab = require('./utility/tab/settings')
 const control_net = require('./utility/tab/control_net')
 const notification = require('./utility/notification')
+const app_events = require('./utility/app_events')
+const py_re = require('./utility/sdapi/python_replacement')
+const { UI } = require('./utility/ui')
+const GenerationSettings = require('./utility/generation_settings')
+const document_util = require('./utility/document_util')
+const file_util = require('./utility/file_util')
 
 let g_horde_generator = new horde_native.hordeGenerator()
 let g_automatic_status = Enum.AutomaticStatusEnum['Offline']
@@ -47,7 +53,8 @@ session.GenerationSession.instance().deactivate() //session starte as inactive
 
 require('photoshop').action.addNotificationListener(
     ['set', 'move'],
-    session.GenerationSession.instance().selectionEventHandler
+    // ui.UI.selectionEventHandler
+    app_events.sessionSelectionEvent.raise
 )
 document.getElementById('sp-viewer-tab').addEventListener('click', async () => {
     if (
@@ -539,7 +546,7 @@ document.addEventListener('mouseenter', async (event) => {
             ) {
                 // if there is an active selection and if the selection has changed
 
-                await selection.calcWidthHeightFromSelection()
+                await ui.UI.calcWidthHeightFromSelection()
 
                 if (
                     session.GenerationSession.instance().state ===
@@ -549,7 +556,7 @@ document.addEventListener('mouseenter', async (event) => {
                     //only if you move the selection while the session is active
                     // g_ui.endSessionUI()
                     const selected_mode = html_manip.getMode()
-                    g_ui.generateModeUI(selected_mode)
+                    ui.UI.generateModeUI(selected_mode)
                 } else {
                     // move the selection while the session is inactive
                 }
@@ -557,7 +564,7 @@ document.addEventListener('mouseenter', async (event) => {
                 // sessionStartHtml(true)//generate more, green color
                 //if you didn't move the selection.
                 // g_ui.startSessionUI()
-                g_ui.generateMoreUI()
+                ui.UI.generateMoreUI()
             }
         }
     } catch (e) {
@@ -777,7 +784,7 @@ async function displayUpdate() {
                 session.GenerationSession.instance().getCurrentGenerationModeByValue(
                     GenerationSettings.sd_mode
                 )
-            g_ui.setGenerateBtnText(`Generate ${selected_mode}`)
+            ui.UI.setGenerateBtnText(`Generate ${selected_mode}`)
             html_manip.setGenerateButtonsColor('generate', 'generate-more')
         }
     } catch (e) {
@@ -983,7 +990,7 @@ discard_selected_class_btns.forEach((element) =>
             await session.GenerationSession.instance().endSession(
                 session.GarbageCollectionState['DiscardSelected']
             ) //end session and accept only selected images
-            g_ui.onEndSessionUI()
+            ui.UI.onEndSessionUI()
         } catch (e) {
             console.warn(e)
         }
@@ -1001,7 +1008,7 @@ accept_selected_class_btns.forEach((element) =>
             await session.GenerationSession.instance().endSession(
                 session.GarbageCollectionState['AcceptSelected']
             ) //end session and accept only selected images
-            g_ui.onEndSessionUI()
+            ui.UI.onEndSessionUI()
         } catch (e) {
             console.warn(e)
         }
@@ -1018,7 +1025,7 @@ accept_class_btns.forEach((element) =>
             await session.GenerationSession.instance().endSession(
                 session.GarbageCollectionState['Accept']
             ) //end session and accept all images
-            g_ui.onEndSessionUI()
+            ui.UI.onEndSessionUI()
         } catch (e) {
             console.warn(e)
         }
@@ -1063,7 +1070,7 @@ Array.from(document.getElementsByClassName('discardClass')).forEach(
             await session.GenerationSession.instance().endSession(
                 session.GarbageCollectionState['Discard']
             ) //end session and remove all images
-            g_ui.onEndSessionUI()
+            ui.UI.onEndSessionUI()
 
             // await discard()
         })
@@ -1621,7 +1628,7 @@ async function easyModeGenerate(mode) {
                     await session.GenerationSession.instance().endSession(
                         session.GarbageCollectionState['Accept']
                     ) //end session and accept all images
-                    g_ui.onEndSessionUI()
+                    ui.UI.onEndSessionUI()
                 } catch (e) {
                     console.warn(e)
                 }
@@ -1641,7 +1648,7 @@ async function easyModeGenerate(mode) {
                 await session.GenerationSession.instance().endSession(
                     session.GarbageCollectionState['Accept']
                 )
-                g_ui.onEndSessionUI()
+                ui.UI.onEndSessionUI()
                 //start new session after you ended the old one
                 await session.GenerationSession.instance().startSession()
 
@@ -1778,7 +1785,7 @@ async function generate(settings, mode) {
                 await session.GenerationSession.instance().endSession(
                     session.GarbageCollectionState['Discard']
                 ) //end session and delete all images
-                g_ui.onEndSessionUI()
+                ui.UI.onEndSessionUI()
 
                 // //delete all mask related layers
             }
@@ -1793,7 +1800,7 @@ async function generate(settings, mode) {
                 await session.GenerationSession.instance().endSession(
                     session.GarbageCollectionState['Discard']
                 ) //end session and delete all images
-                g_ui.onEndSessionUI()
+                ui.UI.onEndSessionUI()
 
                 // //delete all mask related layers
             }
@@ -2897,12 +2904,6 @@ document
             }
         }
     })
-
-const py_re = require('./utility/sdapi/python_replacement')
-const { UI } = require('./utility/ui')
-const GenerationSettings = require('./utility/generation_settings')
-const document_util = require('./utility/document_util')
-const file_util = require('./utility/file_util')
 
 function getDimensions(image) {
     return new Promise((resolve, reject) => {

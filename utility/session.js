@@ -280,46 +280,6 @@ class GenerationSession {
         }
     }
 
-    async selectionEventHandler(event, descriptor) {
-        try {
-            console.log(event, descriptor)
-            const isSelectionActive = await psapi.checkIfSelectionAreaIsActive()
-            if (isSelectionActive) {
-                const current_selection = isSelectionActive // Note: don't use checkIfSelectionAreaIsActive to return the selection object, change this.
-                await selection.calcWidthHeightFromSelection()
-                if (
-                    await GenerationSession.instance().hasSelectionChanged(
-                        current_selection,
-                        GenerationSession.instance().selectionInfo
-                    ) //new selection
-                ) {
-                    const selected_mode =
-                        GenerationSession.instance().getCurrentGenerationModeByValue(
-                            GenerationSettings.sd_mode
-                        )
-                    await app_events.selectionModeChangedEvent.raise(
-                        selected_mode
-                    )
-                    // ui.UI.instance().generateModeUI(selected_mode)
-                } else {
-                    // it's the same selection and the session is active
-                    //indicate that the session will continue. only if the session we are in the same mode as the session's mode
-                    // startSessionUI// green color
-                    const current_mode = html_manip.getMode()
-                    if (
-                        GenerationSession.instance().isActive() && // the session is active
-                        GenerationSession.instance().isSameMode(current_mode) //same mode
-                    ) {
-                        await app_events.generateMoreEvent.raise()
-                        // ui.UI.instance().generateMoreUI()
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn(e)
-        }
-    }
-
     getCurrentGenerationModeByValue(value) {
         for (let key in Enum.generationMode) {
             if (
@@ -549,7 +509,8 @@ class GenerationSession {
                 await selection.reSelectMarqueeExe(
                     GenerationSession.instance().selectionInfo
                 )
-                await GenerationSession.instance().selectionEventHandler()
+                await app_events.sessionSelectionEvent.raise()
+                // await GenerationSession.instance().selectionEventHandler()
             }
         } catch (e) {
             console.warn(e)
